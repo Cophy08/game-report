@@ -2,6 +2,7 @@ from flask import Flask
 from flask import request
 from pprint import pprint
 from collections import namedtuple
+from itertools import combinations
 import ConfigParser
 import pymysql
 import json
@@ -346,30 +347,26 @@ def getGameData():
 
 		# Teammate pairings
 		for team in teams:
-			for p1 in playerShiftsInPeriod[team]:
+			pairings = list(combinations(playerShiftsInPeriod[team], 2))
 
-				# Skip if p1 is a goalie
-				if playerProperties[team][p1]["position"] == "g":
+			for pairing in pairings:
+
+				# Skip combinations involving goalies
+				if playerProperties[team][pairing[0]]["position"] == "g" or playerProperties[team][pairing[1]]["position"] == "g":
 					continue
 
-				for p2 in playerShiftsInPeriod[team]:
+				# Create the pairing key - the lower playerId is always first in the key
+				if pairing[0] < pairing[1]:
+					pairingKey = str(pairing[0]) + "&" + str(pairing[1])
+				elif pairing[1] < pairing[0]:
+					pairingKey = str(pairing[1]) + "&" + str(pairing[0])
 
-					# Skip if p2 is a goalie or if p1 == p2
-					if playerProperties[team][p2]["position"] == "g" or p1 == p2:
-						continue
+				# Create dictionary entry if the pairing doesn't already exist
+				if pairingKey not in teammatePairingTois[team]:
+					teammatePairingTois[team][pairingKey] = 0
 
-					# Create the pairing key
-					if p1 < p2:
-						pairingKey = str(p1) + "&" + str(p2)
-					elif p1 > p2:
-						pairingKey = str(p2) + "&" + str(p1)
-
-					# Create dictionary entry if the pairing doesn't already exist
-					if pairingKey not in teammatePairingTois[team]:
-						teammatePairingTois[team][pairingKey] = 0
-
-					# Increment ev5 TOI of pairing
-					teammatePairingTois[team][pairingKey] += len(set.intersection(ev5Times, playerShiftsInPeriod[team][p1], playerShiftsInPeriod[team][p2]))
+				# Increment ev5 TOI of pairing
+				teammatePairingTois[team][pairingKey] += len(set.intersection(ev5Times, playerShiftsInPeriod[team][pairing[0]], playerShiftsInPeriod[team][pairing[1]]))
 
 		# Opponent pairings
 		for p1 in playerShiftsInPeriod[teams[0]]:
