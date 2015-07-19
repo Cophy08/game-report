@@ -342,7 +342,7 @@ def getGameData():
 				for p2 in playerShiftsInPeriod[team]:
 
 					# Skip goalies and if p1 == p2
-					if playerProperties[team][p1]["position"] == "g" or p1 == p2:
+					if playerProperties[team][p2]["position"] == "g" or p1 == p2:
 						continue
 
 					# Create the pairing key
