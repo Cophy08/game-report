@@ -213,6 +213,8 @@ def getGameData():
 			playerProperties[r["team"]][playerKey]["name"] = r["name"]
 			playerProperties[r["team"]][playerKey]["number"] = r["number"]
 			playerProperties[r["team"]][playerKey]["position"] = r["position"]
+			playerProperties[r["team"]][playerKey]["toi"] = 0
+			playerProperties[r["team"]][playerKey]["ev5Toi"] = 0
 
 	# Populate the playerShifts dictionary for each player
 	for r in shiftData:
@@ -327,6 +329,17 @@ def getGameData():
 
 		#
 		#
+		# Record individual player's TOI
+		#
+		#
+
+		for team in teams:
+			for player in playerShiftsInPeriod[team]:
+				playerProperties[team][player]["toi"] += len(playerShiftsInPeriod[team][player])
+				playerProperties[team][player]["ev5Toi"] += len(set.intersection(ev5Times, playerShiftsInPeriod[team][player]))
+
+		#
+		#
 		# For each combination of skaters (teammates and opponents), get the total ev5 time together by getting the intersect of their shifts AND ev5 times
 		#
 		#
@@ -335,13 +348,13 @@ def getGameData():
 		for team in teams:
 			for p1 in playerShiftsInPeriod[team]:
 
-				# Skip goalies
+				# Skip if p1 is a goalie
 				if playerProperties[team][p1]["position"] == "g":
 					continue
 
 				for p2 in playerShiftsInPeriod[team]:
 
-					# Skip goalies and if p1 == p2
+					# Skip if p2 is a goalie or if p1 == p2
 					if playerProperties[team][p2]["position"] == "g" or p1 == p2:
 						continue
 
@@ -409,7 +422,9 @@ def getGameData():
 				"team": team,
 				"name": playerProperties[team][player]["name"],
 				"number": playerProperties[team][player]["number"],
-				"position": playerProperties[team][player]["position"]
+				"position": playerProperties[team][player]["position"],
+				"toi": playerProperties[team][player]["toi"],
+				"ev5Toi": playerProperties[team][player]["ev5Toi"]
 			}
 			results.append(result)
 
