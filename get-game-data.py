@@ -462,6 +462,13 @@ def getGameData():
 		}
 		results.append(result)
 
+	result = {
+		"type": "teams",
+		"home": teams[1],
+		"away": teams[0]
+	}
+	results.append(result)
+
 	return json.dumps(results)
 
 
