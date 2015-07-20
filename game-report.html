@@ -2,14 +2,20 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<title>Game Data</title>
-	<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+	<title>Game Report</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
 </head>
 <body>
 </body>
 <script>
+
+var playerData = [];
+var eventData = [];
+var shiftData = [];
+var opponentPairingData = [];
+var teammatePairingData = [];
+var teams = [];
 
 var season = 2014;
 var gameId = 30416;
@@ -18,8 +24,212 @@ var jsonUrl = "http://127.0.0.1:5000/get-game-data?season=" + season + "&gameId=
 
 d3.json(jsonUrl, function(error, json) {
 
-	console.log(json)
+	playerData = json.filter(function(d) { return d.type === "player"; });
+	eventData = json.filter(function(d) { return d.type === "event"; });
+	shiftData = json.filter(function(d) { return d.type === "shift"; });
+	opponentPairingData = json.filter(function(d) { return d.type === "opponents"; });
+	teammatePairingData = json.filter(function(d) { return d.type === "teammates"; });
+
+	// Split up pairing keys
+	teammatePairingData.forEach(function(pair) {
+		pair.p1 = +pair.playerIds.substring(0, pair.playerIds.indexOf("&"));
+		pair.p2 = +pair.playerIds.substring(pair.playerIds.indexOf("&") + 1);
+	});
+	opponentPairingData.forEach(function(pair) {
+		pair.p1 = +pair.playerIds.substring(0, pair.playerIds.indexOf("&"));
+		pair.p2 = +pair.playerIds.substring(pair.playerIds.indexOf("&") + 1);
+	});
+
+	// Nest shift data and append player metadata
+	shiftData = d3.nest()
+		.key(function(d) { return d.playerId; })
+		.entries(shiftData);
+	shiftData.forEach(function(d) {
+		d.key = +d.key;
+
+		var playerProperties = playerData.filter(function(p) { return p.type === "player" && p.playerId === d.key; })[0];
+		d.playerId = playerProperties.playerId;
+		d.name = playerProperties.name;
+		d.number = playerProperties.number;
+		d.position = playerProperties.position;
+		d.team = playerProperties.team;
+		d.toi = playerProperties.toi;
+	});
+
+	// Remove all pairings involving goalies
+	var goaliePlayerIds = playerData.filter(function(d) { return d.position === "g"; })
+		.map(function(d) { return d.playerId; });
+	teammatePairingData = teammatePairingData.filter(function(d) { return goaliePlayerIds.indexOf(d.p1) < 0 && goaliePlayerIds.indexOf(d.p2) < 0; });
+	opponentPairingData = opponentPairingData.filter(function(d) { return goaliePlayerIds.indexOf(d.playerIds[0]) < 0 && goaliePlayerIds.indexOf(d.playerIds[1]) < 0; });
+
+	// Remove goalie data
+	playerData = playerData.filter(function(d) { return d.position !== "g"; });
+	shiftData = shiftData.filter(function(d) { return d.position !== "g"; });
+
+	// Get team names: [away, home]
+	teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
+	teams[1] = json.filter(function(d) { return d.type === "teams"; })[0].home;
+
+	// Group players and set the player display order
+	teams.forEach(function(t) {
+		groupPlayers(t);
+	});
+	shiftData = shiftData.sort(function(a, b) {
+		var aScore = 0;
+		var bScore = 0;
+
+		// The home team is displayed after the away team
+		if (a.team === teams[1]) aScore += 1000;
+		if (b.team === teams[1]) bScore += 1000;
+
+		// The home team's defensemen are displayed last; the away team's defensemen are displayed first
+		if (a.team === teams[1] && a.position === "d") aScore += 500;
+		else if (a.team !== teams[1] && a.position !== "d") aScore += 100;
+		if (b.team === teams[1] && b.position === "d") bScore += 500;
+		else if (b.team !== teams[1] && b.position !== "d") bScore += 100;
+
+		// Adjust the order returned from the groupPlayers function
+		// The away team's players are displayed in ascending TOI; descending TOI for the home team
+		var adjAOrder = a.order;
+		var adjBOrder = b.order;
+		if (a.team === b.team && a.team !== teams[1]) {
+			adjAOrder = 90 - a.order;
+			adjBOrder = 90 - b.order;
+		}
+		aScore += adjAOrder;
+		bScore += adjBOrder;
+
+		return aScore - bScore;
+	});
+
+	shiftData.forEach(function(d) {
+		console.log(d.team, d.name);
+	});
 });
+
+function groupPlayers(team) {
+
+	/*
+	*
+	* Prepare data needed to group players
+	*
+	*/
+
+	// Get pairing data for specified team
+	// Append individual TOIs, and shift similarity to data
+	var pairingData = teammatePairingData.filter(function(d) { return d.team === team; });
+	pairingData.forEach(function(pair) {
+		pair.p1Toi = playerData.filter(function(d) { return d.team === team && d.playerId === pair.p1; })[0].ev5Toi;
+		pair.p2Toi = playerData.filter(function(d) { return d.team === team && d.playerId === pair.p2; })[0].ev5Toi;
+		pair.shiftSimilarity = pair.toi / (pair.p1Toi + pair.p2Toi - pair.toi);
+	});
+
+	/*
+	*
+	* Group players by shift similarity
+	*
+	*/
+
+	var playerSets = [];
+	var ungroupedPlayers = playerData.filter(function(d) { return d.team === team; })
+		.map(function(d) { return d.playerId; });
+
+	// Sort pairings by descending similarity, then start grouping players with the highest shift similarities
+	var minSimilarity = 0.5;
+	pairingData = pairingData.sort(function(a, b) { return b.shiftSimilarity - a.shiftSimilarity; });
+	pairingData.forEach(function(pair) {
+		if (pair.shiftSimilarity >= minSimilarity) {
+
+			var grouped = false;
+
+			// If 1 or more player sets exist, then check to see if the current pair should be added to an existing set
+			var i = 0;
+			while (!grouped && i < playerSets.length) {
+				if (playerSets[i].indexOf(pair.p1) >= 0 && playerSets[i].indexOf(pair.p2) < 0) {
+					// If an existing set contains p1 but not p2, add p2 to the existing set
+					playerSets[i].push(pair.p2);
+					grouped = true;
+				} else if (playerSets[i].indexOf(pair.p1) < 0 && playerSets[i].indexOf(pair.p2) >= 0) {
+					// If an existing set contains p2 but not p1, add p1 to the existing set
+					playerSets[i].push(pair.p1);
+					grouped = true;
+				} else if (playerSets[i].indexOf(pair.p1) >= 0 && playerSets[i].indexOf(pair.p2) >= 0) {
+					// If an existing set already contains both p1 and p2, then no updates needed
+					grouped = true;
+				}
+				i++;
+			}
+
+			// If the existing pair doesn't belong to any existing player set, then create a new set
+			if (!grouped) {
+				playerSets.push([pair.p1, pair.p2]);
+			}
+
+			// Remove the grouped players from the list of ungrouped players
+			[pair.p1, pair.p2].forEach(function(p) {
+				var deleteIndex = ungroupedPlayers.indexOf(p);
+				if (deleteIndex >= 0) {
+					ungroupedPlayers.splice(deleteIndex, 1);
+				}
+			});
+		}
+	});
+
+	// For testing: Print player sets with names
+	playerSets.forEach(function(set) {
+		var names = [];
+		set.forEach(function(p) {
+			playerName = playerData.filter(function(d) { return d.team === team && d.playerId === p; })[0].name;
+			names.push(playerName);
+		});
+		console.log(names);
+	});
+
+	/*
+	*
+	* Sort all the sets and ungrouped players by descending TOI
+	*
+	*/
+
+	var sortedPlayers = [];
+
+	// Add the player sets to the list to be sorted
+	// Sets will be sorted based on their average TOI
+	playerSets.forEach(function(set) {
+
+		// Get the shift data for each player in the set
+		// Sort the players by descending TOI
+		var setPlayers = shiftData.filter(function(p) { return set.indexOf(p.playerId) >= 0; });
+		setPlayers.sort(function(a, b) { return b.toi - a.toi; });
+
+		sortedPlayers.push({
+			players: set,
+			toi: d3.mean(setPlayers, function(p) { return p.toi; })
+		});
+	});
+
+	// Add the ungrouped players to the list to be sorted
+	ungroupedPlayers.forEach(function(player) {
+		var playerData = shiftData.filter(function(p) { return p.playerId === player; });
+		sortedPlayers.push({
+			players: [player],
+			toi: playerData[0].toi
+		});
+	});
+
+	// Sort the combined list of sets and ungrouped players by descending TOI
+	sortedPlayers.sort(function(a, b) { return b.toi - a.toi; });
+
+	// Convert the sorted players into a flat list
+	sortedPlayers = sortedPlayers.map(function(d) { return d.players; });
+	sortedPlayers = [].concat.apply([], sortedPlayers);
+
+	// Record the sort order in the shiftData
+	shiftData.filter(function(p) { return p.team === team; })
+		.forEach(function(p) {
+			p.order = sortedPlayers.indexOf(p.playerId);
+		});
+}
 
 </script>
 </body>
