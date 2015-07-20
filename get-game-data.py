@@ -351,10 +351,6 @@ def getGameData():
 
 			for pairing in pairings:
 
-				# Skip combinations involving goalies
-				if playerProperties[team][pairing[0]]["position"] == "g" or playerProperties[team][pairing[1]]["position"] == "g":
-					continue
-
 				# Create the pairing key - the lower playerId is always first in the key
 				if pairing[0] < pairing[1]:
 					pairingKey = str(pairing[0]) + "&" + str(pairing[1])
@@ -406,13 +402,9 @@ def getGameData():
 		}
 		results.append(result)
 
-	# Return player properties - exclude goalies
+	# Return player properties
 	for team in playerProperties:
 		for player in playerProperties[team]:
-
-			if playerProperties[team][player]["position"] == "g":
-				continue
-
 			result = {
 				"type": "player",
 				"playerId": player,
