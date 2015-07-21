@@ -15,22 +15,28 @@ var eventData = [];
 var shiftData = [];
 var opponentPairingData = [];
 var teammatePairingData = [];
+var periodData = [];
+
 var teams = [];
 
 var season = 2014;
 var gameId = 30416;
-
 var jsonUrl = "http://127.0.0.1:5000/get-game-data?season=" + season + "&gameId=" + gameId;
 
 d3.json(jsonUrl, function(error, json) {
 
+	periodData = json.filter(function(d) { return d.type === "period"; });
 	playerData = json.filter(function(d) { return d.type === "player"; });
 	eventData = json.filter(function(d) { return d.type === "event"; });
 	shiftData = json.filter(function(d) { return d.type === "shift"; });
 	opponentPairingData = json.filter(function(d) { return d.type === "opponents"; });
 	teammatePairingData = json.filter(function(d) { return d.type === "teammates"; });
 
-	// Split up pairing keys
+	// Get team names: [away, home]
+	teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
+	teams[1] = json.filter(function(d) { return d.type === "teams"; })[0].home;
+
+	// Split up pairing keys in the pairing datasets
 	teammatePairingData.forEach(function(pair) {
 		pair.p1 = +pair.playerIds.substring(0, pair.playerIds.indexOf("&"));
 		pair.p2 = +pair.playerIds.substring(pair.playerIds.indexOf("&") + 1);
@@ -66,14 +72,11 @@ d3.json(jsonUrl, function(error, json) {
 	playerData = playerData.filter(function(d) { return d.position !== "g"; });
 	shiftData = shiftData.filter(function(d) { return d.position !== "g"; });
 
-	// Get team names: [away, home]
-	teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
-	teams[1] = json.filter(function(d) { return d.type === "teams"; })[0].home;
-
 	// Group players and set the player display order
 	teams.forEach(function(t) {
 		groupPlayers(t);
 	});
+
 	shiftData = shiftData.sort(function(a, b) {
 		var aScore = 0;
 		var bScore = 0;
@@ -102,10 +105,127 @@ d3.json(jsonUrl, function(error, json) {
 		return aScore - bScore;
 	});
 
-	shiftData.forEach(function(d) {
-		console.log(d.team, d.name);
-	});
+	// Turn shift data into an array: [away shift data, home shift data]
+	shiftData = [shiftData.filter(function(d) { return d.team !== teams[0]; }),
+		shiftData.filter(function(d) { return d.team !== teams[1]; })];
+
+	initializeVisualization();
 });
+
+function initializeVisualization() {
+
+	var secondsPerPixel = 4;
+	var rowHeight = 16;
+	var dotR = 1.5;
+	var hGap = 20;
+	var vGap = 16;
+	var nameWidth = 120;
+
+	/*
+	*
+	* Initialize scales
+	*
+	*/
+
+	var heights = [];
+	var yScales = [];
+
+	teams.forEach(function(team, i) {
+		heights[i] = shiftData[i].length * rowHeight;
+
+		yScales[i] = d3.scale.ordinal()
+			.domain(shiftData[i].map(function(d) { return d.playerId; }))
+			.rangePoints([0, heights[i]], 1);
+	});
+
+	var xScales = [];
+	periodData.forEach(function(period, i) {
+		xScales[i] = d3.scale.linear()
+			.domain([0, periodData[i].duration])
+			.range([0, Math.ceil(periodData[i].duration / secondsPerPixel)]);
+	});
+
+	var timelineWidth = Math.ceil(dotR) + d3.sum(xScales, function(d) { return d.range()[1]; }) + hGap * (periodData.length - 1);
+
+
+	/*
+	*
+	* Append SVG and groups
+	*
+	*/
+
+	var svg = d3.select("body").append("svg")
+		.attr("id", "shift-chart");
+
+	// Append a group for each team
+	var teamGroups = svg.selectAll("g.team")
+		.data(teams);
+	teamGroups.enter().append("g")
+		.attr("class", "team")
+		.attr("id", function(d, i) { return "team" + i; });
+
+	// In each team group, append new groups for each period
+	var periodGroups = teamGroups.selectAll("g.period")
+		.data(periodData);
+	periodGroups.enter().append("g")
+		.attr("class", "period")
+		.attr("id", function(d) { return "period" + d.period; });
+
+	// In each period group, append new groups that are bound to events that occurred in the period
+	var eventGroups = periodGroups.selectAll("g.event")
+		.data(function(period) {
+			return eventData.filter(function(ev) { return ev.period === period.period; });
+		});
+	eventGroups.enter().append("g")
+		.attr("class", "event")
+		.attr("id", function(d) { return "event" + d["id"]; });
+
+	// For each team and period, append groups for players on the team
+	teams.forEach(function(team, i) {
+		var playerGroups = d3.select("#team" + i).selectAll("g.period").selectAll("g.player")
+			.data(shiftData[i]);
+		playerGroups.enter().append("g")
+			.attr("class", "player")
+			.attr("id", function(d) {
+				// Replace all spaces and periods in the player name
+				return d.name.replace(/\ /g, "").replace(/\./g, "") + d.playerId;
+			});
+	});
+
+	// Append shift lines to each player group - only for shifts in the period
+	periodData.forEach(function(period) {
+		var shiftLines = d3.selectAll("g.team").selectAll("#period" + period.period).selectAll("g.player").selectAll("line.shift")
+			.data(function(d) {
+				return d.values.filter(function(s) { return s.period === period.period; });
+			});
+		shiftLines.enter().append("line")
+			.attr("class", "shift")
+			.attr("id", function(d) { return d.playerId + "&" + d.period + "&" + d.start + "-" + d.end; });
+	});
+
+	// g.team0 (bound to shiftData)
+		// g.period1 (not bound to anything - just create manually)
+			//g.event (create a group for each event in period)
+				// line.def
+				// line.fwd
+				// dot.player (create a dot for each event player)
+			//g.player (create a group for each shiftData player)
+				// line.shift (create a line for each shift belonging to the player)
+		// g.period2
+		// g.period3
+		// g.intermission1 (not bound to anything - just create manually)
+			// text.numbers
+		// g.intermission2
+		// g.names (not bound to anything - just create manually)
+			// text.name (access the playernames in the bound shiftData)
+	// g.team1 (bound to shiftData)
+		// g.period1
+		// g.period2
+		// g.period3
+		// g.intermission1
+		// g.intermission2
+		// g.names
+}
 
 function groupPlayers(team) {
 
@@ -176,14 +296,14 @@ function groupPlayers(team) {
 	});
 
 	// For testing: Print player sets with names
-	playerSets.forEach(function(set) {
-		var names = [];
-		set.forEach(function(p) {
-			playerName = playerData.filter(function(d) { return d.team === team && d.playerId === p; })[0].name;
-			names.push(playerName);
-		});
-		console.log(names);
-	});
+	// playerSets.forEach(function(set) {
+	// 	var names = [];
+	// 	set.forEach(function(p) {
+	// 		playerName = playerData.filter(function(d) { return d.team === team && d.playerId === p; })[0].name;
+	// 		names.push(playerName);
+	// 	});
+	// 	console.log(names);
+	// });
 
 	/*
 	*
