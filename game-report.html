@@ -18,6 +18,7 @@ var teammatePairingData = [];
 var periodData = [];
 
 var teams = [];
+var blueTeam = "";
 
 var season = 2014;
 var gameId = 30416;
@@ -35,6 +36,7 @@ d3.json(jsonUrl, function(error, json) {
 	// Get team names: [away, home]
 	teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
 	teams[1] = json.filter(function(d) { return d.type === "teams"; })[0].home;
+	blueTeam = teams[0];
 
 	// Split up pairing keys in the pairing datasets
 	teammatePairingData.forEach(function(pair) {
@@ -106,8 +108,8 @@ d3.json(jsonUrl, function(error, json) {
 	});
 
 	// Turn shift data into an array: [away shift data, home shift data]
-	shiftData = [shiftData.filter(function(d) { return d.team !== teams[0]; }),
-		shiftData.filter(function(d) { return d.team !== teams[1]; })];
+	shiftData = [shiftData.filter(function(d) { return d.team === teams[0]; }),
+		shiftData.filter(function(d) { return d.team === teams[1]; })];
 
 	initializeVisualization();
 });
@@ -121,21 +123,21 @@ function initializeVisualization() {
 	var vGap = 16;
 	var nameWidth = 120;
 
+	var red = "#ee0000";
+	var blue = "#0000ee";
+
 	/*
 	*
 	* Initialize scales
 	*
 	*/
 
-	var heights = [];
 	var yScales = [];
 
 	teams.forEach(function(team, i) {
-		heights[i] = shiftData[i].length * rowHeight;
-
 		yScales[i] = d3.scale.ordinal()
 			.domain(shiftData[i].map(function(d) { return d.playerId; }))
-			.rangePoints([0, heights[i]], 1);
+			.rangePoints([0, shiftData[i].length * rowHeight], 1);
 	});
 
 	var xScales = [];
@@ -147,7 +149,6 @@ function initializeVisualization() {
 
 	var timelineWidth = Math.ceil(dotR) + d3.sum(xScales, function(d) { return d.range()[1]; }) + hGap * (periodData.length - 1);
 
-
 	/*
 	*
 	* Append SVG and groups
@@ -155,21 +156,83 @@ function initializeVisualization() {
 	*/
 
 	var svg = d3.select("body").append("svg")
-		.attr("id", "shift-chart");
+		.attr("id", "shift-chart")
+		.style("background", "none")
+		.style("font-family", "Roboto")
+		.style("font-size", "13px")
+		.style("height", (shiftData[0].length + shiftData[1].length) * rowHeight + vGap)
+		.style("width", timelineWidth + hGap + nameWidth + "px");
 
 	// Append a group for each team
 	var teamGroups = svg.selectAll("g.team")
 		.data(teams);
 	teamGroups.enter().append("g")
 		.attr("class", "team")
-		.attr("id", function(d, i) { return "team" + i; });
+		.attr("id", function(d, i) { return "team" + i; })
+		.attr("transform", function(d, i) { return "translate(0," + i * (shiftData[0].length * rowHeight + vGap) + ")"; });
+
+	// Append group for player names
+	var nameGroups = teamGroups.append("g")
+		.attr("class", "names")
+		.attr("transform", "translate(" + (timelineWidth + hGap) + ",0)");
 
 	// In each team group, append new groups for each period
 	var periodGroups = teamGroups.selectAll("g.period")
 		.data(periodData);
 	periodGroups.enter().append("g")
-		.attr("class", "period")
-		.attr("id", function(d) { return "period" + d.period; });
+		.attr("class", function(d) { return "period period" + d.period; })
+		.attr("transform", function(d) {
+			var xShift = 0;
+			for (var j = 1; j < d.period; j++) {
+				xShift += xScales[j].range()[1];
+			}
+			xShift += (d.period - 1) * hGap;
+			return "translate(" + xShift + ",0)";
+		});
+
+	// For each team and period, append groups for players on the team
+	teams.forEach(function(team, i) {
+		var playerGroups = d3.select("#team" + i).selectAll("g.period").selectAll("g.player")
+			.data(shiftData[i]);
+		playerGroups.enter().append("g")
+			.attr("class", "player");
+	});
+
+	/*
+	*
+	* Append elements to groups
+	*
+	*/
+
+	// Append player names for each team
+	teams.forEach(function(team, i) {
+		var names = d3.select("#team" + i).select("g.names").selectAll("text")
+			.data(shiftData[i]);
+		names.enter().append("text")
+			.attr("x", 0)
+			.attr("y", function(d) { return yScales[i](d.playerId); })
+			.style("alignment-baseline", "middle")
+			.text(function(d) { return d.name; });
+
+	});
+
+	// Append shift lines to each player group - only for shifts in the period
+	periodData.forEach(function(period) {
+		var shiftLines = d3.selectAll("g.team").selectAll(".period.period" + period.period).selectAll("g.player").selectAll("line.shift")
+			.data(function(d) {
+				return d.values.filter(function(s) { return s.period === period.period; });
+			});
+		shiftLines.enter().append("line")
+			.attr("class", "shift")
+			.attr("x1", function(d) { return xScales[period.period - 1](d.start); })
+			.attr("x2", function(d) { return xScales[period.period - 1](d.end); })
+			.attr("y1", function(d) { return yScales[teams.indexOf(d.team)](d.playerId); })
+			.attr("y2", function(d) { return yScales[teams.indexOf(d.team)](d.playerId); })
+			.style("stroke", "#f7f7f7")
+			.style("stroke-width", 15);
+	});
+
+
 
 	// In each period group, append new groups that are bound to events that occurred in the period
 	var eventGroups = periodGroups.selectAll("g.event")
@@ -177,54 +240,36 @@ function initializeVisualization() {
 			return eventData.filter(function(ev) { return ev.period === period.period; });
 		});
 	eventGroups.enter().append("g")
-		.attr("class", "event")
-		.attr("id", function(d) { return "event" + d["id"]; });
+		.attr("class", "event");
 
-	// For each team and period, append groups for players on the team
+	// Append event dots
 	teams.forEach(function(team, i) {
-		var playerGroups = d3.select("#team" + i).selectAll("g.period").selectAll("g.player")
-			.data(shiftData[i]);
-		playerGroups.enter().append("g")
-			.attr("class", "player")
-			.attr("id", function(d) {
-				// Replace all spaces and periods in the player name
-				return d.name.replace(/\ /g, "").replace(/\./g, "") + d.playerId;
-			});
-	});
-
-	// Append shift lines to each player group - only for shifts in the period
-	periodData.forEach(function(period) {
-		var shiftLines = d3.selectAll("g.team").selectAll("#period" + period.period).selectAll("g.player").selectAll("line.shift")
+		var dots = d3.select("#team" + i).selectAll("g.event").selectAll("circle")
 			.data(function(d) {
-				return d.values.filter(function(s) { return s.period === period.period; });
+				if (i === 0) {
+					return d.awaySkaters.filter(function(s) { return s > 0; });
+				} else if (i === 1) {
+					return d.homeSkaters.filter(function(s) { return s > 0; });
+				}
 			});
-		shiftLines.enter().append("line")
-			.attr("class", "shift")
-			.attr("id", function(d) { return d.playerId + "&" + d.period + "&" + d.start + "-" + d.end; });
+		dots.enter().append("circle")
+			.attr("cx", function(d) {
+				// Get the data that's bound to the parent event group
+				var thisEventData = d3.select(this.parentNode).data()[0];
+				return xScales[thisEventData.period - 1](thisEventData.time);
+			})
+			.attr("cy", function(d) { return yScales[i](d); })
+			.style("r", dotR)
+			.style("fill", function(d) {
+				var thisEventData = d3.select(this.parentNode).data()[0];
+				if (thisEventData.eventTeam === blueTeam) {
+					return blue;
+				} else {
+					return red;
+				}
+			});
 	});
 
-	// g.team0 (bound to shiftData)
-		// g.period1 (not bound to anything - just create manually)
-			//g.event (create a group for each event in period)
-				// line.def
-				// line.fwd
-				// dot.player (create a dot for each event player)
-			//g.player (create a group for each shiftData player)
-				// line.shift (create a line for each shift belonging to the player)
-		// g.period2
-		// g.period3
-		// g.intermission1 (not bound to anything - just create manually)
-			// text.numbers
-		// g.intermission2
-		// g.names (not bound to anything - just create manually)
-			// text.name (access the playernames in the bound shiftData)
-	// g.team1 (bound to shiftData)
-		// g.period1
-		// g.period2
-		// g.period3
-		// g.intermission1
-		// g.intermission2
-		// g.names
 }
 
 function groupPlayers(team) {
