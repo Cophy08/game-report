@@ -64,6 +64,29 @@ d3.json(jsonUrl, function(error, json) {
 		d.toi = playerProperties.toi;
 	});
 
+	// Record separate lists for forwards and defense on ice for each event - this will be used to draw the event lines
+	eventData.forEach(function(d) {
+		var skatersOnIce = [d.awaySkaters, d.homeSkaters];
+		var defensemen = [[], []];
+		var forwards = [[], []];
+
+		skatersOnIce.forEach(function(teamSkaters, i) {
+			teamSkaters.filter(function(d) { return d > 0; }).forEach(function(s) {
+				var thisPlayerData = playerData.filter(function(d) { return d.playerId === s; })[0];
+				if (["l", "r", "c"].indexOf(thisPlayerData.position) >= 0) {
+					defensemen[i].push(s);
+				}else if (thisPlayerData.position === "d") {
+					forwards[i].push(s);
+				}
+			});
+		});
+
+		d.awayDefensemen = defensemen[0];
+		d.homeDefensemen = defensemen[1];
+		d.awayForwards = forwards[0];
+		d.homeForwards = forwards[1];
+	});
+
 	// Remove all pairings involving goalies
 	var goaliePlayerIds = playerData.filter(function(d) { return d.position === "g"; })
 		.map(function(d) { return d.playerId; });
@@ -269,81 +292,66 @@ function initializeVisualization() {
 	eventGroups.enter().append("g")
 		.attr("class", "event");
 
-	// Append event lines and dots
+
+
 	teams.forEach(function(team, i) {
 
-		// Event lines
+		// Append event lines
 		["fwd", "def"].forEach(function(pos) {
-			var lines = d3.select("#team" + i).selectAll("g.event").selectAll("line." + pos)
-				.data(function(d) {
-					var skatersOnIce = [];
-					var returnedSkaters = [];
-					if (i === 0) {
-						skatersOnIce = d.awaySkaters.filter(function(s) { return s > 0; });
-					} else if (i === 1) {
-						skatersOnIce = d.homeSkaters.filter(function(s) { return s > 0; });
-					}
-					skatersOnIce.forEach(function(s) {
-						var thisPlayerData = playerData.filter(function(d) { return d.playerId === s; })[0];
-						if (pos === "fwd" && ["l", "r", "c"].indexOf(thisPlayerData.position) >= 0) {
-							returnedSkaters.push(s);
-						} else if (pos === "def" && thisPlayerData.position === "d") {
-							returnedSkaters.push(s);
-						}
-					});
-					// Return the skaters as [[s1, s2, s3]] to draw one line per set
-					return [returnedSkaters];
-				});
-			lines.enter().append("line")
+
+			var propertyName;
+			if (i === 0) {
+				propertyName = "away";
+			} else if (i === 1) {
+				propertyName = "home";
+			}
+			if (pos === "fwd") {
+				propertyName += "Forwards";
+			} else if (pos === "def") {
+				propertyName += "Defensemen";
+			}
+
+			d3.select("#team" + i).selectAll("g.event").append("line")
 				.attr("class", pos)
-				.attr("x1", function() {
-					// Get the data that's bound to the parent event group
-					var thisEventData = d3.select(this.parentNode).data()[0];
-					return xScales[thisEventData.period - 1](thisEventData.time);
-				})
-				.attr("x2", function() {
-					var thisEventData = d3.select(this.parentNode).data()[0];
-					return xScales[thisEventData.period - 1](thisEventData.time);
-				})
-				.attr("y1", function(d) { return d3.min(d, function(s) { return yScales[i](s); }); })
-				.attr("y2", function(d) { return d3.max(d, function(s) { return yScales[i](s); }); })
+				.attr("x1", function(d) { return xScales[d.period - 1](d.time); })
+				.attr("x2", function(d) { return xScales[d.period - 1](d.time); })
+				.attr("y1", function(d) { return d3.min(d[propertyName], function(s) { return yScales[i](s); }); })
+				.attr("y2", function(d) { return d3.max(d[propertyName], function(s) { return yScales[i](s); }); })
 				.style("stroke", function(d) {
-					var thisEventData = d3.select(this.parentNode).data()[0];
-					if (thisEventData.eventTeam === blueTeam) {
+					if (d.eventTeam === blueTeam) {
 						return blue;
 					} else {
 						return red;
 					}
 				})
-				.style("stroke-opacity", 0.15)
+				.style("stroke-opacity", 0.15);
 		});
 
-		// Event dots
-		var dots = d3.select("#team" + i).selectAll("g.event").selectAll("circle")
-			.data(function(d) {
-				if (i === 0) {
-					return d.awaySkaters.filter(function(s) { return s > 0; });
-				} else if (i === 1) {
-					return d.homeSkaters.filter(function(s) { return s > 0; });
-				}
-			});
-		dots.enter().append("circle")
-			.attr("cx", function() {
-				var thisEventData = d3.select(this.parentNode).data()[0];
-				return xScales[thisEventData.period - 1](thisEventData.time);
-			})
-			.attr("cy", function(d) { return yScales[i](d); })
-			.style("r", dotR)
-			.style("fill", function(d) {
-				var thisEventData = d3.select(this.parentNode).data()[0];
-				if (thisEventData.eventTeam === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			});
-	});
+		// Append event dots
+		var propertyName;
+		if (i === 0) {
+			propertyName = "awaySkaters";
+		} else if (i === 1) {
+			propertyName = "homeSkaters";
+		}
 
+		var eventGroups = d3.select("#team" + i).selectAll("g.event");
+		eventGroups[0].forEach(function(g) {
+			g.__data__[propertyName].filter(function(s) { return s > 0; }).forEach(function(s) {
+				d3.select(g).append("circle")
+					.attr("cx", function(d) { return xScales[d.period - 1](d.time); })
+					.attr("cy", function() { return yScales[i](s); })
+					.style("r", dotR)
+					.style("fill", function(d) {
+						if (d.eventTeam === blueTeam) {
+							return blue;
+						} else {
+							return red;
+						}
+					});
+			});
+		});
+	});
 }
 
 function groupPlayers(team) {
