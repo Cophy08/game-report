@@ -146,6 +146,7 @@ def getGameData():
 			events[eventKey] = dict()
 			events[eventKey]["eventTeam"] = r["eventTeam"]
 			events[eventKey]["eventType"] = r["eventType"]
+			events[eventKey]["eventP1"] = r["eventP1"]
 			events[eventKey]["period"] = r["period"]
 			events[eventKey]["time"] = r["time"]
 			events[eventKey]["homeSkaters"] = [r["homeS1"], r["homeS2"], r["homeS3"], r["homeS4"], r["homeS5"], r["homeS6"]]
@@ -457,6 +458,7 @@ def getGameData():
 			"id": event,
 			"eventTeam": events[event]["eventTeam"],
 			"eventType": events[event]["eventType"],
+			"eventP1": events[event]["eventP1"],
 			"period": events[event]["period"],
 			"time": events[event]["time"],
 			"homeSkaters": events[event]["homeSkaters"],
