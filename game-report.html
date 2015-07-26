@@ -304,12 +304,19 @@ function initializeVisualization() {
 	});
 
 	// In each period group, append new groups that are bound to events that occurred in the period
+	// Identify which events are goals using the "goal" class
 	var eventGroups = periodGroups.selectAll("g.event")
 		.data(function(period) {
 			return eventData.filter(function(ev) { return ev.period === period.period; });
 		});
 	eventGroups.enter().append("g")
-		.attr("class", "event");
+		.attr("class", function(d) {
+			var groupClass = "event";
+			if (d.eventType === "goal") {
+				groupClass += " goal";
+			}
+			return groupClass;
+		});
 
 
 
@@ -371,6 +378,47 @@ function initializeVisualization() {
 			});
 		});
 
+		// Append goal circles
+		var eventGroups = d3.select("#team" + i).selectAll("g.goal");
+		eventGroups[0].forEach(function(g) {
+			g.__data__[propertyName].filter(function(s) { return s > 0; }).forEach(function(s) {
+				d3.select(g).append("circle")
+					.attr("cx", function(d) { return xScales[d.period - 1](d.time); })
+					.attr("cy", function() { return yScales[i](s); })
+					.style("r", function(d) {
+						if (d.eventP1 === s) {
+							return dotR * 3 - 0.5;
+						} else {
+							return dotR * 3;
+						}
+					})
+					.style("fill-opacity", 0.2)
+					.style("fill", function(d) {
+						if (d.eventP1 !== 1) {
+							if (d.eventTeam === blueTeam) {
+								return blue;
+							} else {
+								return red;
+							}
+						} else {
+							return "none";
+						}
+					})
+					.style("stroke-opacity", 0.5)
+					.style("stroke", function(d) {
+						if (d.eventP1 === s) {
+							if (d.eventTeam === blueTeam) {
+								return blue;
+							} else {
+								return red;
+							}
+						} else {
+							return "none";
+						}
+					});
+
+			});
+		});
 	});
 }
 
