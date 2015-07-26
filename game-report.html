@@ -21,7 +21,7 @@ var teams = [];
 var blueTeam = "";
 
 var season = 2014;
-var gameId = 30416;
+var gameId = 30324; //30416;
 var jsonUrl = "http://127.0.0.1:5000/get-game-data?season=" + season + "&gameId=" + gameId;
 
 d3.json(jsonUrl, function(error, json) {
@@ -208,7 +208,7 @@ function initializeVisualization() {
 		.attr("transform", function(d) {
 			var xShift = 0;
 			for (var j = 1; j < d.period; j++) {
-				xShift += xScales[j].range()[1];
+				xShift += xScales[j - 1].range()[1];
 			}
 			xShift += (d.period - 1) * intermissionGap;
 			return "translate(" + xShift + ",0)";
@@ -227,7 +227,7 @@ function initializeVisualization() {
 		.attr("transform", function(d) {
 			var xShift = 0;
 			for (var j = 1; j <= d; j++) {
-				xShift += xScales[j].range()[1];
+				xShift += xScales[j - 1].range()[1];
 			}
 			xShift += (d - 1) * intermissionGap;
 			return "translate(" + xShift + ",0)";
@@ -404,7 +404,7 @@ function initializeVisualization() {
 							return "none";
 						}
 					})
-					.style("stroke-opacity", 0.5)
+					.style("stroke-opacity", 0.6)
 					.style("stroke", function(d) {
 						if (d.eventP1 === s) {
 							if (d.eventTeam === blueTeam) {
