@@ -142,7 +142,8 @@ function initializeVisualization() {
 	var secondsPerPixel = 4;
 	var rowHeight = 16;
 	var dotR = 1.5;
-	var hGap = 20;
+	var intermissionGap = 40;
+	var gameEndGap = 20;
 	var vGap = 16;
 	var nameWidth = 120;
 
@@ -170,7 +171,7 @@ function initializeVisualization() {
 			.range([0, Math.ceil(periodData[i].duration / secondsPerPixel)]);
 	});
 
-	var timelineWidth = Math.ceil(dotR) + d3.sum(xScales, function(d) { return d.range()[1]; }) + hGap * (periodData.length - 1);
+	var timelineWidth = Math.ceil(dotR) + d3.sum(xScales, function(d) { return d.range()[1]; }) + intermissionGap * (periodData.length - 1);
 
 	/*
 	*
@@ -182,9 +183,9 @@ function initializeVisualization() {
 		.attr("id", "shift-chart")
 		.style("background", "none")
 		.style("font-family", "Roboto")
-		.style("font-size", "13px")
+		.style("font-size", "12px")
 		.style("height", (shiftData[0].length + shiftData[1].length) * rowHeight + vGap)
-		.style("width", timelineWidth + hGap + nameWidth + "px");
+		.style("width", timelineWidth + gameEndGap + nameWidth + "px");
 
 	// Append a group for each team
 	var teamGroups = svg.selectAll("g.team")
@@ -197,9 +198,9 @@ function initializeVisualization() {
 	// Append group for player names
 	var nameGroups = teamGroups.append("g")
 		.attr("class", "names")
-		.attr("transform", "translate(" + (timelineWidth + hGap) + ",0)");
+		.attr("transform", "translate(" + (timelineWidth + gameEndGap) + ",0)");
 
-	// In each team group, append new groups for each period
+	// In each team group, append new groups for each period and intermission
 	var periodGroups = teamGroups.selectAll("g.period")
 		.data(periodData);
 	periodGroups.enter().append("g")
@@ -209,9 +210,29 @@ function initializeVisualization() {
 			for (var j = 1; j < d.period; j++) {
 				xShift += xScales[j].range()[1];
 			}
-			xShift += (d.period - 1) * hGap;
+			xShift += (d.period - 1) * intermissionGap;
 			return "translate(" + xShift + ",0)";
 		});
+
+	var intermissionGroups = teamGroups.selectAll("g.intermission")
+		.data(function() {
+			var intermissions = [];
+			for (var i = 1; i < periodData.length; i++) {
+				intermissions.push(i);
+			}
+			return intermissions;
+		});
+	intermissionGroups.enter().append("g")
+		.attr("class", function(d) { return "intermission intermission" + d; })
+		.attr("transform", function(d) {
+			var xShift = 0;
+			for (var j = 1; j <= d; j++) {
+				xShift += xScales[j].range()[1];
+			}
+			xShift += (d - 1) * intermissionGap;
+			return "translate(" + xShift + ",0)";
+		});
+
 
 	// For each team and period, append groups for players on the team
 	teams.forEach(function(team, i) {
@@ -246,13 +267,11 @@ function initializeVisualization() {
 			.style("fill-opacity", 0.6)
 			.text(function(d) { return d.name; });
 
-		var numberGroup = d3.select("#team" + i).append("g")
-			.attr("class", "numbers");
-		var numbers = d3.select("#team" + i).select("g.numbers").selectAll("text.number")
+		var numbers = d3.select("#team" + i).selectAll("g.intermission").selectAll("text.number")
 			.data(shiftData[i]);
 		numbers.enter().append("text")
 			.attr("class", "number")
-			.attr("x", xScales[0].range()[1] + hGap / 2)
+			.attr("x", intermissionGap / 2)
 			.attr("y", function(d) { return yScales[i](d.playerId); })
 			.style("alignment-baseline", "middle")
 			.style("text-anchor", "middle")
@@ -351,6 +370,7 @@ function initializeVisualization() {
 					});
 			});
 		});
+
 	});
 }
 
