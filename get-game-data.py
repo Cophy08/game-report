@@ -111,6 +111,7 @@ def getGameData():
 	periodDurations = dict()
 	teammatePairingTois = dict()
 	opponentPairingTois = dict()
+	ppTimes = dict()
 
 	#
 	#
@@ -203,6 +204,12 @@ def getGameData():
 
 	teammatePairingTois[teams[1]] = dict()
 	teammatePairingTois[teams[0]] = dict()
+
+	ppTimes[teams[1]] = dict()
+	ppTimes[teams[0]] = dict()
+	for per in periodDurations:
+		ppTimes[teams[1]][per] = set()
+		ppTimes[teams[0]][per] = set()
 
 	for r in shiftData:
 		playerKey = r["playerId"]
@@ -312,9 +319,6 @@ def getGameData():
 		#
 
 		ev5Times = set()
-		ppTimes = dict()
-		ppTimes[teams[1]] = set()
-		ppTimes[teams[0]] = set()
 
 		for t in range(0, periodDurations[per]):
 
@@ -325,9 +329,9 @@ def getGameData():
 			# Record the powerplay times for each team
 			playerCountDiff = (skaterCounts[teams[1]][t] + goalieCounts[teams[1]][t]) - (skaterCounts[teams[0]][t] + goalieCounts[teams[0]][t])
 			if playerCountDiff < 0:
-				ppTimes[teams[0]].add(t)
+				ppTimes[teams[0]][per].add(t)
 			elif playerCountDiff > 0:
-				ppTimes[teams[1]].add(t)
+				ppTimes[teams[1]][per].add(t)
 
 		#
 		#
@@ -385,6 +389,42 @@ def getGameData():
 
 				# Increment ev5 TOI of pairing
 				opponentPairingTois[pairingKey] += len(set.intersection(ev5Times, playerShiftsInPeriod[teams[0]][p1], playerShiftsInPeriod[teams[1]][p2]))
+
+	#
+	#
+	# Convert powerplay sets into ranges for json output
+	#
+	#
+
+	ppRanges = dict()
+	ppRanges[teams[1]] = dict()
+	ppRanges[teams[0]] = dict()
+	for per in periodDurations:
+		ppRanges[teams[1]][per] = dict()
+		ppRanges[teams[0]][per] = dict()
+
+	for team in ppTimes:
+		for per in ppTimes[team]:
+			ppTimesList = list(ppTimes[team][per])
+			ppTimesList.sort()
+			ppStart = -1
+			ppEnd = -1
+			for i, sec in enumerate(ppTimesList):
+				if i == 0:
+					ppStart = sec
+				else:
+					if sec - ppTimesList[i - 1] > 1:
+						# Create a range if the current time does not immediately follow the previous time (i.e., the difference is more than 1 second)
+						ppEnd = ppTimesList[i - 1]
+						ppRanges[team][per][ppStart] = ppEnd
+						ppStart = sec
+						ppEnd = -1
+					elif i == len(ppTimesList) - 1:
+						# Create a range if the current time is the final value in the list of this period's powerplay times
+						ppEnd = sec
+						ppRanges[team][per][ppStart] = ppEnd
+						ppStart = -1
+						ppEnd = -1
 
 	#
 	#
@@ -450,6 +490,19 @@ def getGameData():
 			"toi": opponentPairingTois[pairing]
 		}
 		results.append(result)
+
+	# Return powerplay ranges
+	for team in ppRanges:
+		for period in ppRanges[team]:
+			for start in ppRanges[team][period]:
+				result = {
+					"type": "powerplay",
+					"team": team,
+					"period": period,
+					"start": start,
+					"end": ppRanges[team][period][start]
+				}
+				results.append(result)
 
 	# Return event data
 	for event in events:
