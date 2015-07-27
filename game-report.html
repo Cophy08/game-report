@@ -22,8 +22,8 @@ var teams = [];
 var blueTeam = "";
 
 var season = 2014;
-//var gameId = 30324;
-var gameId = 30416;
+var gameId = 30324;
+//var gameId = 30416;
 var jsonUrl = "http://127.0.0.1:5000/get-game-data?season=" + season + "&gameId=" + gameId;
 
 d3.json(jsonUrl, function(error, json) {
@@ -319,7 +319,7 @@ function initializeVisualization() {
 
 	// In each period group, append new groups that are bound to events that occurred in the period
 	// Identify which events are goals using the "goal" class
-	var eventGroups = periodGroups.selectAll("g.event")
+	var eventGroups = d3.selectAll("g.team").selectAll(".period").selectAll("g.event")
 		.data(function(period) {
 			return eventData.filter(function(ev) { return ev.period === period.period; });
 		});
@@ -446,7 +446,7 @@ function initializeVisualization() {
 			.attr("x2", function(d) { return xScales[d.period - 1](d.end); })
 			.attr("y1", vGap / 2)
 			.attr("y2", vGap / 2)
-			.attr("stroke-width", 6)
+			.attr("stroke-width", 15)
 			.attr("stroke-opacity", 0.15)
 			.attr("stroke", function(d) {
 				if (d.team === blueTeam) {
@@ -454,6 +454,30 @@ function initializeVisualization() {
 				} else {
 					return red;
 				}
+			});
+
+		var goalMarkers = d3.select("g.powerplay").select(".period.period" + per.period).selectAll(".goal")
+			.data(eventData.filter(function(ev) { return ev.period === per.period && ev.eventType === "goal"; }));
+		goalMarkers.enter().append("text")
+			.attr("class", "goal")
+			.attr("x", function(d) { return xScales[d.period - 1](d.time); })
+			.attr("y", vGap / 2)
+			.style("alignment-baseline", "middle")
+			.style("text-anchor", "middle")
+			.style("font-size", "10px")
+			.style("fill", function(d){
+				if (d.eventTeam === blueTeam) {
+					return blue;
+				} else {
+					return red;
+				}
+			})
+			.text(function(d) {
+				var goals = eventData.filter(function(ev) {
+					return ev.eventType === "goal" && ev.eventTeam === d.eventTeam
+						&& (ev.period < d.period || (ev.period === d.period && ev.time <= d.time));
+				});
+				return goals.length;
 			});
 	});
 }
