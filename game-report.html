@@ -15,13 +15,15 @@ var eventData = [];
 var shiftData = [];
 var opponentPairingData = [];
 var teammatePairingData = [];
+var powerplayData = [];
 var periodData = [];
 
 var teams = [];
 var blueTeam = "";
 
 var season = 2014;
-var gameId = 30324; //30416;
+//var gameId = 30324;
+var gameId = 30416;
 var jsonUrl = "http://127.0.0.1:5000/get-game-data?season=" + season + "&gameId=" + gameId;
 
 d3.json(jsonUrl, function(error, json) {
@@ -32,6 +34,8 @@ d3.json(jsonUrl, function(error, json) {
 	shiftData = json.filter(function(d) { return d.type === "shift"; });
 	opponentPairingData = json.filter(function(d) { return d.type === "opponents"; });
 	teammatePairingData = json.filter(function(d) { return d.type === "teammates"; });
+	powerplayData = json.filter(function(d) { return d.type === "powerplay"; });
+	console.log(powerplayData);
 
 	// Get team names: [away, home]
 	teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
@@ -144,7 +148,7 @@ function initializeVisualization() {
 	var dotR = 1.5;
 	var intermissionGap = 40;
 	var gameEndGap = 20;
-	var vGap = 16;
+	var vGap = 24;
 	var nameWidth = 120;
 
 	var red = "#ee0000";
@@ -193,15 +197,25 @@ function initializeVisualization() {
 	teamGroups.enter().append("g")
 		.attr("class", "team")
 		.attr("id", function(d, i) { return "team" + i; })
-		.attr("transform", function(d, i) { return "translate(0," + i * (shiftData[0].length * rowHeight + vGap) + ")"; });
+		.attr("transform", function(d, i) {
+			if (i === 1) {
+				return "translate(0," + (shiftData[0].length * rowHeight + vGap) + ")";
+			} else {
+				return "translate(0,0)";
+			}
+		});
+
+	var ppGroup = svg.append("g")
+		.attr("class", "powerplay")
+		.attr("transform", function(d, i) { return "translate(0," + (shiftData[0].length * rowHeight) + ")"; });
 
 	// Append group for player names
 	var nameGroups = teamGroups.append("g")
 		.attr("class", "names")
 		.attr("transform", "translate(" + (timelineWidth + gameEndGap) + ",0)");
 
-	// In each team group, append new groups for each period and intermission
-	var periodGroups = teamGroups.selectAll("g.period")
+	// In each team group and the powerplay group, append new groups for each period and intermission
+	var periodGroups = svg.selectAll("g.team, g.powerplay").selectAll("g.period")
 		.data(periodData);
 	periodGroups.enter().append("g")
 		.attr("class", function(d) { return "period period" + d.period; })
@@ -318,8 +332,6 @@ function initializeVisualization() {
 			return groupClass;
 		});
 
-
-
 	teams.forEach(function(team, i) {
 
 		// Append event lines
@@ -416,9 +428,33 @@ function initializeVisualization() {
 							return "none";
 						}
 					});
-
 			});
 		});
+	});
+
+	/*
+	*
+	* Append powerplay markers
+	*
+	*/
+
+	periodData.forEach(function(per) {
+		var ppLines = d3.select("g.powerplay").select(".period.period" + per.period).selectAll("line")
+			.data(powerplayData.filter(function(d) { return d.period === per.period; }));
+		ppLines.enter().append("line")
+			.attr("x1", function(d) { return xScales[d.period - 1](d.start); })
+			.attr("x2", function(d) { return xScales[d.period - 1](d.end); })
+			.attr("y1", vGap / 2)
+			.attr("y2", vGap / 2)
+			.attr("stroke-width", 6)
+			.attr("stroke-opacity", 0.15)
+			.attr("stroke", function(d) {
+				if (d.team === blueTeam) {
+					return blue;
+				} else {
+					return red;
+				}
+			});
 	});
 }
 
