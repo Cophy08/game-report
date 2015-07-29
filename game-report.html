@@ -35,7 +35,6 @@ d3.json(jsonUrl, function(error, json) {
 	opponentPairingData = json.filter(function(d) { return d.type === "opponents"; });
 	teammatePairingData = json.filter(function(d) { return d.type === "teammates"; });
 	powerplayData = json.filter(function(d) { return d.type === "powerplay"; });
-	console.log(powerplayData);
 
 	// Get team names: [away, home]
 	teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
@@ -161,7 +160,6 @@ function initializeVisualization() {
 	*/
 
 	var yScales = [];
-
 	teams.forEach(function(team, i) {
 		yScales[i] = d3.scale.ordinal()
 			.domain(shiftData[i].map(function(d) { return d.playerId; }))
@@ -192,68 +190,69 @@ function initializeVisualization() {
 		.style("width", timelineWidth + gameEndGap + nameWidth + "px");
 
 	// Append a group for each team
-	var teamGroups = svg.selectAll("g.team")
-		.data(teams);
-	teamGroups.enter().append("g")
-		.attr("class", "team")
-		.attr("id", function(d, i) { return "team" + i; })
-		.attr("transform", function(d, i) {
-			if (i === 1) {
-				return "translate(0," + (shiftData[0].length * rowHeight + vGap) + ")";
-			} else {
-				return "translate(0,0)";
-			}
-		});
+	d3.select("#shift-chart").selectAll("g.team")
+		.data(teams)
+		.enter().append("g")
+			.attr("class", "team")
+			.attr("id", function(d, i) { return "team" + i; })
+			.attr("transform", function(d, i) {
+				if (i === 1) {
+					return "translate(0," + (shiftData[0].length * rowHeight + vGap) + ")";
+				} else {
+					return "translate(0,0)";
+				}
+			});
 
-	var ppGroup = svg.append("g")
+	d3.select("#shift-chart").append("g")
 		.attr("class", "powerplay")
 		.attr("transform", function(d, i) { return "translate(0," + (shiftData[0].length * rowHeight) + ")"; });
 
 	// Append group for player names
-	var nameGroups = teamGroups.append("g")
+	d3.selectAll("g.team").append("g")
 		.attr("class", "names")
 		.attr("transform", "translate(" + (timelineWidth + gameEndGap) + ",0)");
 
-	// In each team group and the powerplay group, append new groups for each period and intermission
-	var periodGroups = svg.selectAll("g.team, g.powerplay").selectAll("g.period")
-		.data(periodData);
-	periodGroups.enter().append("g")
-		.attr("class", function(d) { return "period period" + d.period; })
-		.attr("transform", function(d) {
-			var xShift = 0;
-			for (var j = 1; j < d.period; j++) {
-				xShift += xScales[j - 1].range()[1];
-			}
-			xShift += (d.period - 1) * intermissionGap;
-			return "translate(" + xShift + ",0)";
-		});
+	// In each team group and the powerplay group, append new groups for each period
+	d3.selectAll("g.team, g.powerplay").selectAll("g.period")
+		.data(periodData)
+		.enter().append("g")
+			.attr("class", function(d) { return "period period" + d.period; })
+			.attr("transform", function(d) {
+				var xShift = 0;
+				for (var j = 1; j < d.period; j++) {
+					xShift += xScales[j - 1].range()[1];
+				}
+				xShift += (d.period - 1) * intermissionGap;
+				return "translate(" + xShift + ",0)";
+			});
 
-	var intermissionGroups = teamGroups.selectAll("g.intermission")
+	// In each team group, append new groups for each intermission
+	d3.selectAll("g.team").selectAll("g.intermission")
 		.data(function() {
 			var intermissions = [];
 			for (var i = 1; i < periodData.length; i++) {
 				intermissions.push(i);
 			}
 			return intermissions;
-		});
-	intermissionGroups.enter().append("g")
-		.attr("class", function(d) { return "intermission intermission" + d; })
-		.attr("transform", function(d) {
-			var xShift = 0;
-			for (var j = 1; j <= d; j++) {
-				xShift += xScales[j - 1].range()[1];
-			}
-			xShift += (d - 1) * intermissionGap;
-			return "translate(" + xShift + ",0)";
-		});
+		})
+		.enter().append("g")
+			.attr("class", function(d) { return "intermission intermission" + d; })
+			.attr("transform", function(d) {
+				var xShift = 0;
+				for (var j = 1; j <= d; j++) {
+					xShift += xScales[j - 1].range()[1];
+				}
+				xShift += (d - 1) * intermissionGap;
+				return "translate(" + xShift + ",0)";
+			});
 
 
 	// For each team and period, append groups for players on the team
 	teams.forEach(function(team, i) {
-		var playerGroups = d3.select("#team" + i).selectAll("g.period").selectAll("g.player")
-			.data(shiftData[i]);
-		playerGroups.enter().append("g")
-			.attr("class", "player");
+		d3.select("#team" + i).selectAll("g.period").selectAll("g.player")
+			.data(shiftData[i])
+			.enter().append("g")
+				.attr("class", "player");
 	});
 
 	/*
@@ -262,75 +261,78 @@ function initializeVisualization() {
 	*
 	*/
 
-	// Append player names for each team
 	teams.forEach(function(team, i) {
-		var names = d3.select("#team" + i).select("g.names").selectAll("text.name")
-			.data(shiftData[i]);
-		names.enter().append("text")
-			.attr("class", "name")
-			.attr("x", 0)
-			.attr("y", function(d) { return yScales[i](d.playerId); })
-			.style("alignment-baseline", "middle")
-			.style("fill", function(d) {
-				if (d.team === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			})
-			.style("fill-opacity", 0.6)
-			.text(function(d) { return d.name; });
 
-		var numbers = d3.select("#team" + i).selectAll("g.intermission").selectAll("text.number")
-			.data(shiftData[i]);
-		numbers.enter().append("text")
-			.attr("class", "number")
-			.attr("x", intermissionGap / 2)
-			.attr("y", function(d) { return yScales[i](d.playerId); })
-			.style("alignment-baseline", "middle")
-			.style("text-anchor", "middle")
-			.style("fill", function(d) {
-				if (d.team === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			})
-			.style("fill-opacity", 0.6)
-			.style("font-size", 10)
-			.text(function(d) { return d.number; });
+		// Append player names
+		d3.select("#team" + i).select("g.names").selectAll("text.name")
+			.data(shiftData[i])
+			.enter().append("text")
+				.attr("class", "name")
+				.attr("x", 0)
+				.attr("y", function(d) { return yScales[i](d.playerId); })
+				.style("alignment-baseline", "middle")
+				.style("fill", function(d) {
+					if (d.team === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
+				})
+				.style("fill-opacity", 0.6)
+				.text(function(d) { return d.name; });
+
+		// Append player numbers
+		d3.select("#team" + i).selectAll("g.intermission").selectAll("text.number")
+			.data(shiftData[i])
+			.enter().append("text")
+				.attr("class", "number")
+				.attr("x", intermissionGap / 2)
+				.attr("y", function(d) { return yScales[i](d.playerId); })
+				.style("alignment-baseline", "middle")
+				.style("text-anchor", "middle")
+				.style("fill", function(d) {
+					if (d.team === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
+				})
+				.style("fill-opacity", 0.6)
+				.style("font-size", 10)
+				.text(function(d) { return d.number; });
 	});
 
 	// Append shift lines to each player group - only for shifts in the period
 	periodData.forEach(function(period) {
-		var shiftLines = d3.selectAll("g.team").selectAll(".period.period" + period.period).selectAll("g.player").selectAll("line.shift")
+		d3.selectAll("g.team").selectAll(".period.period" + period.period).selectAll("g.player").selectAll("line.shift")
 			.data(function(d) {
 				return d.values.filter(function(s) { return s.period === period.period; });
-			});
-		shiftLines.enter().append("line")
-			.attr("class", "shift")
-			.attr("x1", function(d) { return xScales[period.period - 1](d.start); })
-			.attr("x2", function(d) { return xScales[period.period - 1](d.end); })
-			.attr("y1", function(d) { return yScales[teams.indexOf(d.team)](d.playerId); })
-			.attr("y2", function(d) { return yScales[teams.indexOf(d.team)](d.playerId); })
-			.style("stroke", "#f7f7f7")
-			.style("stroke-width", 15);
+			})
+			.enter().append("line")
+				.attr("class", "shift")
+				.attr("x1", function(d) { return xScales[period.period - 1](d.start); })
+				.attr("x2", function(d) { return xScales[period.period - 1](d.end); })
+				.attr("y1", function(d) { return yScales[teams.indexOf(d.team)](d.playerId); })
+				.attr("y2", function(d) { return yScales[teams.indexOf(d.team)](d.playerId); })
+				.style("stroke", "#f7f7f7")
+				.style("stroke-width", 15);
 	});
 
 	// In each period group, append new groups that are bound to events that occurred in the period
-	// Identify which events are goals using the "goal" class
-	var eventGroups = d3.selectAll("g.team").selectAll(".period").selectAll("g.event")
+	d3.selectAll("g.team").selectAll(".period").selectAll("g.event")
 		.data(function(period) {
 			return eventData.filter(function(ev) { return ev.period === period.period; });
-		});
-	eventGroups.enter().append("g")
-		.attr("class", function(d) {
-			var groupClass = "event";
-			if (d.eventType === "goal") {
-				groupClass += " goal";
-			}
-			return groupClass;
-		});
+		})
+		.enter().append("g")
+			.attr("class", function(d) {
+				var groupClass = "event";
+
+				// Identify which events are goals using the "goal" class
+				if (d.eventType === "goal") {
+					groupClass += " goal";
+				}
+				return groupClass;
+			});
 
 	teams.forEach(function(team, i) {
 
@@ -439,46 +441,46 @@ function initializeVisualization() {
 	*/
 
 	periodData.forEach(function(per) {
-		var ppLines = d3.select("g.powerplay").select(".period.period" + per.period).selectAll("line")
-			.data(powerplayData.filter(function(d) { return d.period === per.period; }));
-		ppLines.enter().append("line")
-			.attr("x1", function(d) { return xScales[d.period - 1](d.start); })
-			.attr("x2", function(d) { return xScales[d.period - 1](d.end); })
-			.attr("y1", vGap / 2)
-			.attr("y2", vGap / 2)
-			.attr("stroke-width", 15)
-			.attr("stroke-opacity", 0.15)
-			.attr("stroke", function(d) {
-				if (d.team === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			});
-
-		var goalMarkers = d3.select("g.powerplay").select(".period.period" + per.period).selectAll(".goal")
-			.data(eventData.filter(function(ev) { return ev.period === per.period && ev.eventType === "goal"; }));
-		goalMarkers.enter().append("text")
-			.attr("class", "goal")
-			.attr("x", function(d) { return xScales[d.period - 1](d.time); })
-			.attr("y", vGap / 2)
-			.style("alignment-baseline", "middle")
-			.style("text-anchor", "middle")
-			.style("font-size", "10px")
-			.style("fill", function(d){
-				if (d.eventTeam === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			})
-			.text(function(d) {
-				var goals = eventData.filter(function(ev) {
-					return ev.eventType === "goal" && ev.eventTeam === d.eventTeam
-						&& (ev.period < d.period || (ev.period === d.period && ev.time <= d.time));
+		d3.select("g.powerplay").select(".period.period" + per.period).selectAll("line")
+			.data(powerplayData.filter(function(d) { return d.period === per.period; }))
+			.enter().append("line")
+				.attr("x1", function(d) { return xScales[d.period - 1](d.start); })
+				.attr("x2", function(d) { return xScales[d.period - 1](d.end); })
+				.attr("y1", vGap / 2)
+				.attr("y2", vGap / 2)
+				.attr("stroke-width", 15)
+				.attr("stroke-opacity", 0.15)
+				.attr("stroke", function(d) {
+					if (d.team === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
 				});
-				return goals.length;
-			});
+
+		d3.select("g.powerplay").select(".period.period" + per.period).selectAll(".goal")
+			.data(eventData.filter(function(ev) { return ev.period === per.period && ev.eventType === "goal"; }))
+			.enter().append("text")
+				.attr("class", "goal")
+				.attr("x", function(d) { return xScales[d.period - 1](d.time); })
+				.attr("y", vGap / 2 + 1)
+				.style("alignment-baseline", "middle")
+				.style("text-anchor", "middle")
+				.style("font-size", "10px")
+				.style("fill", function(d){
+					if (d.eventTeam === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
+				})
+				.text(function(d) {
+					var goals = eventData.filter(function(ev) {
+						return ev.eventType === "goal" && ev.eventTeam === d.eventTeam
+							&& (ev.period < d.period || (ev.period === d.period && ev.time <= d.time));
+					});
+					return goals.length;
+				});
 	});
 }
 
