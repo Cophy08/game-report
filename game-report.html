@@ -7,9 +7,13 @@
 	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
 </head>
 <body>
-	<h1 style="font: 24px Roboto; line-height: 24px; margin: 16px 0;">Shift Chart</h1>
+	<h1 style="font: 24px Roboto; line-height: 24px; margin: 16px 0;">Shifts</h1>
 	<div style="height: auto; width: 100%; overflow-y: hidden; overflow-x: auto;">
 		<svg id="shift-chart"></svg>
+	</div>
+	<h1 style="font: 24px Roboto; line-height: 24px; margin: 16px 0;">Matchups</h1>
+	<div style="height: auto; width: 100%; overflow-y: hidden; overflow-x: auto;">
+		<svg id="matchup-chart"></svg>
 	</div>
 </body>
 <script>
@@ -24,10 +28,12 @@ var periodData = [];
 
 var teams = [];
 var blueTeam = "";
+var red = "#ee0000";
+var blue = "#0000ee";
 
 var season = 2014;
-var gameId = 30324;
-//var gameId = 30416;
+//var gameId = 30324;
+var gameId = 30416;
 var jsonUrl = "http://127.0.0.1:5000/get-game-data?season=" + season + "&gameId=" + gameId;
 
 d3.json(jsonUrl, function(error, json) {
@@ -141,10 +147,11 @@ d3.json(jsonUrl, function(error, json) {
 	shiftData = [shiftData.filter(function(d) { return d.team === teams[0]; }),
 		shiftData.filter(function(d) { return d.team === teams[1]; })];
 
-	initializeVisualization();
+	appendShiftChart();
+	appendMatchupChart();
 });
 
-function initializeVisualization() {
+function appendShiftChart() {
 
 	var secondsPerPixel = 4;
 	var rowHeight = 16;
@@ -153,9 +160,6 @@ function initializeVisualization() {
 	var gameEndGap = 20;
 	var vGap = 24;
 	var nameWidth = 120;
-
-	var red = "#ee0000";
-	var blue = "#0000ee";
 
 	/*
 	*
@@ -493,6 +497,207 @@ function initializeVisualization() {
 					return goals.length;
 				});
 	});
+}
+
+function appendMatchupChart() {
+
+	var cellHeight = 24;
+	var cellWidth = 24;
+	var namesHeight = 120;
+	var namesWidth = 120;
+	var extraRightSpace = 40;
+
+	/*
+	*
+	* Get corsis for/against for each matchup
+	*
+	*/
+	opponentPairingData.forEach(function(m) {
+
+		// Get events involving both players
+		var matchupEvents = eventData.filter(function(d) {
+				var includesP1 = false;
+				var includesP2 = false;
+				if (d.awayDefensemen.indexOf(m.p1) >= 0 || d.awayForwards.indexOf(m.p1) >= 0 || d.homeDefensemen.indexOf(m.p1) >= 0 || d.homeForwards.indexOf(m.p1) >= 0) {
+					includesP1 = true;
+				}
+				if (d.awayDefensemen.indexOf(m.p2) >= 0 || d.awayForwards.indexOf(m.p2) >= 0 || d.homeDefensemen.indexOf(m.p2) >= 0 || d.homeForwards.indexOf(m.p2) >= 0) {
+					includesP2 = true;
+				}
+				if (includesP1 && includesP2) {
+					return true;
+				} else {
+					return false;
+				}
+			});
+
+		// Count corsi events for each player
+		var homeCf = 0;
+		var awayCf = 0;
+		matchupEvents.forEach(function(e) {
+			if (e.eventTeam === teams[0]) {
+				awayCf += 1;
+			} else if (e.eventTeam === teams[1]) {
+				homeCf += 1;
+			}
+		});
+
+		// Record matchup results
+		m.homeCf = homeCf;
+		m.awayCf = awayCf;
+	});
+
+	/*
+	*
+	* Initialize scales
+	*
+	*/
+
+	// Adjust sort order for the away team - different from the order used in the shift chart
+	var xOrder = shiftData[0].slice();
+	xOrder = xOrder.sort(function(a,b) {
+		if ((a.position === "d" && b.position === "d") || (a.position !== "d" && b.position !== "d")) {
+			return a.order - b.order;
+		} else if (a.position === "d" && b.position !== "d") {
+			return 1;
+		} else if (a.position !== "d" && b.position === "d") {
+			return -1;
+		}
+	});
+
+	var x = d3.scale.ordinal()
+		.domain(xOrder.map(function(d) { return d.playerId; }))
+		.rangePoints([0, shiftData[0].length * cellWidth], 1);
+
+	var y = d3.scale.ordinal()
+		.domain(shiftData[1].map(function(d) { return d.playerId; }))
+		.rangePoints([0, shiftData[1].length * cellHeight], 1);
+
+	var maxToi = d3.max(opponentPairingData, function(d) { return d.toi; });
+	var r = d3.scale.sqrt()
+		.domain([0, maxToi])
+		.range([0, cellWidth/2 - 1])
+		.clamp(false);
+
+	var maxCorsiDiff = d3.max(opponentPairingData, function(d) { return Math.abs(d.homeCf - d.awayCf); });
+	var l = d3.scale.linear()
+		.domain([0, maxCorsiDiff])
+		.range([0, cellWidth/2]);
+
+	/*
+	*
+	* Append groups
+	*
+	*/
+
+	var svg = d3.select("#matchup-chart")
+		.attr("height", shiftData[1].length * cellHeight + namesHeight)
+		.attr("width", shiftData[0].length * cellWidth + namesWidth + extraRightSpace)
+		.style("background", "none")
+		.style("font-family", "Roboto")
+		.style("font-size", "12px");
+
+	svg.append("g")
+		.attr("class", "names team0")
+		.attr("transform", "translate(" + namesWidth + ",0)");
+	svg.append("g")
+		.attr("class", "names team1")
+		.attr("transform", "translate(0," + namesHeight + ")");
+	svg.append("g")
+		.attr("class", "bubbles")
+		.attr("transform", "translate(" + namesWidth + "," + namesHeight + ")");
+
+	// Away team player names
+	svg.select("g.names.team0").selectAll("text")
+		.data(shiftData[0])
+		.enter().append("text")
+			.attr("transform", function(d) { return "rotate(-60 " + (x(d.playerId) + 0) + "," + (namesHeight - 0)  + ")"; })
+			.attr("x", function(d) { return x(d.playerId) + 0; })
+			.attr("y", namesHeight)
+			.style("alignment-baseline", "middle")
+			.style("fill", function() {
+				if (teams[0] === blueTeam) {
+					return blue;
+				} else {
+					return red;
+				}
+			})
+			.style("fill-opacity", 0.6)
+			.text(function(d) { return d.name; });
+
+	// Home team player names
+	svg.select("g.names.team1").selectAll("text")
+		.data(shiftData[1])
+		.enter().append("text")
+			.attr("x", namesWidth)
+			.attr("y", function(d) { return y(d.playerId); })
+			.style("alignment-baseline", "middle")
+			.style("text-anchor", "end")
+			.style("fill", function() {
+				if (teams[1] === blueTeam) {
+					return blue;
+				} else {
+					return red;
+				}
+			})
+			.style("fill-opacity", 0.6)
+			.text(function(d) { return d.name; });
+
+	// Matchup bubbles
+	svg.select("g.bubbles").selectAll("circle")
+		.data(opponentPairingData)
+		.enter().append("circle")
+			.attr("cx", function(d) { return x(d.p1); })
+			.attr("cy", function(d) { return y(d.p2); })
+			.attr("r", function(d) { return r(d.toi); })
+			.style("fill", "#f2f2f2");
+
+	// Matchup lines
+	svg.select("g.bubbles").selectAll("line")
+		.data(opponentPairingData)
+		.enter().append("line")
+		.attr("x1", function(d) { return x(d.p1); })
+		.attr("y1", function(d) { return y(d.p2); })
+		.attr("x2", function(d) {
+			if (d.homeCf - d.awayCf > 0) {
+				return x(d.p1) - l(d.homeCf - d.awayCf);
+			} else {
+				return x(d.p1);
+			}
+		})
+		.attr("y2", function(d) {
+			if (d.awayCf - d.homeCf > 0) {
+				return y(d.p2) - l(d.awayCf - d.homeCf);
+			} else {
+				return y(d.p2);
+			}
+		})
+		.style("stroke", function(d) {
+			if (d.awayCf - d.homeCf > 0) {
+				if (teams[0] === blueTeam) {
+					return blue;
+				} else {
+					return red;
+				}
+			} else if (d.homeCf - d.awayCf > 0) {
+				if (teams[1] === blueTeam) {
+					return blue;
+				} else {
+					return red;
+				}
+			}
+		})
+		.style("stroke-width", 1)
+		.style("stroke-linecap", "round")
+		.style("stroke-opacity", 0.8)
+		.style("display", function(d) {
+			if (d.awayCf - d.homeCf === 0) {
+				return "none";
+			} else {
+				return "";
+			}
+		});
+
 }
 
 function groupPlayers(team) {
