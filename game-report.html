@@ -8,12 +8,12 @@
 </head>
 <body style="width: 100%;">
 	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 16px auto;">Shifts</h1>
-	<div id="shifts-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0 auto;">
-		<svg id="shift-chart"></svg>
+	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
+		<svg id="shift-chart" style="display: block; position: relative; margin: 0 auto;"></svg>
 	</div>
 	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 16px auto; margin-top: 80px;">Matchups</h1>
-	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0 auto;">
-		<svg id="matchup-chart"></svg>
+	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
+		<svg id="matchup-chart" style="display: block; position: relative; margin: 0 auto;"></svg>
 	</div>
 </body>
 <script>
@@ -205,8 +205,8 @@ function appendShiftChart() {
 		.style("width", svgWidth);
 
 	// Set parent div's width so that it can be centred
-	d3.select("#shifts-div")
-		.style("width", svgWidth + "px");
+	// d3.select("#shifts-div")
+	// 	.style("width", svgWidth + "px");
 
 	// Append a group for each team
 	d3.select("#shift-chart").selectAll("g.team")
@@ -606,8 +606,8 @@ function appendMatchupChart() {
 		.style("font-size", "12px");
 
 	// Set parent div's width so that it can be centred
-	d3.select("#matchups-div")
-		.style("width", shiftData[0].length * cellWidth + namesWidth + extraRightSpace + "px");
+	// d3.select("#matchups-div")
+	// 	.style("width", shiftData[0].length * cellWidth + namesWidth + extraRightSpace + "px");
 
 	svg.append("g")
 		.attr("class", "names team0")
