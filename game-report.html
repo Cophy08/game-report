@@ -588,6 +588,10 @@ function appendMatchupChart() {
 		.domain([0, maxCorsiDiff])
 		.range([0, cellWidth/2]);
 
+	var xLen = d3.scale.linear()
+		.domain([0, maxToi])
+		.range([0, cellWidth/2]);
+
 	/*
 	*
 	* Append groups
@@ -619,9 +623,9 @@ function appendMatchupChart() {
 	svg.select("g.names.team0").selectAll("text")
 		.data(shiftData[0])
 		.enter().append("text")
-			.attr("transform", function(d) { return "rotate(-60 " + (x(d.playerId) + 0) + "," + (namesHeight - 0)  + ")"; })
-			.attr("x", function(d) { return x(d.playerId) + 0; })
-			.attr("y", namesHeight)
+			.attr("transform", function(d) { return "rotate(-60 " + (x(d.playerId) + 5) + "," + (namesHeight - 5)  + ")"; })
+			.attr("x", function(d) { return x(d.playerId) + 5; })
+			.attr("y", namesHeight - 5)
 			.style("alignment-baseline", "middle")
 			.style("fill", function() {
 				if (teams[0] === blueTeam) {
@@ -652,117 +656,120 @@ function appendMatchupChart() {
 			.text(function(d) { return d.name; });
 
 	// Matchup bubbles
-	svg.select("g.bubbles").selectAll("circle.bubble")
-		.data(opponentPairingData)
-		.enter().append("circle")
-			.attr("class", "bubble")
-			.attr("cx", function(d) { return x(d.p1); })
-			.attr("cy", function(d) { return y(d.p2); })
-			.attr("r", function(d) { return r(d.toi); })
-			.style("fill", "#f2f2f2");
-
-	// Matchup lines
-	svg.select("g.bubbles").selectAll("path")
-		.data(opponentPairingData)
-		.enter().append("path")
-		.attr("d", function(d) {
-			var cx = x(d.p1);
-			var cy = y(d.p2);
-			var pt1 = (cx - 2) + " " + cy; // left corner
-			var pt2 = cx + " " + (cy + 2); // bottom corner
-			var pt3 = (cx + 2) + " " + cy; // right corner
-			//var pt4 = cx + " " + (cy - l(d.awayCf - d.homeCf)); // top
-			var pt4 = cx + " " + (cy - l(Math.abs(d.awayCf - d.homeCf)));
-			//return "M" + pt1 + " " + "L" + pt2 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
-			return "M" + pt1 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
-		})
-		.style("fill", function(d) {
-			if (d.awayCf - d.homeCf > 0) {
-				if (teams[0] === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			} else if (d.homeCf - d.awayCf > 0) {
-				if (teams[1] === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			}
-		})
-		.style("fill-opacity", 0.6)
-		.style("display", function(d) {
-			if (d.awayCf - d.homeCf === 0) {
-				return "none";
-			} else {
-				return "";
-			}
-		});
-
-	// svg.select("g.bubbles").selectAll("circle.dot")
+	// svg.select("g.bubbles").selectAll("circle.bubble")
 	// 	.data(opponentPairingData)
 	// 	.enter().append("circle")
-	// 		.attr("class", "dot")
+	// 		.attr("class", "bubble")
 	// 		.attr("cx", function(d) { return x(d.p1); })
 	// 		.attr("cy", function(d) { return y(d.p2); })
-	// 		.attr("r", 1.5)
-	// 		.style("fill", function(d) {
-	// 			if (d.awayCf - d.homeCf > 0) {
-	// 				if (teams[0] === blueTeam) {
-	// 					return blue;
-	// 				} else {
-	// 					return red;
-	// 				}
-	// 			} else if (d.homeCf - d.awayCf > 0) {
-	// 				if (teams[1] === blueTeam) {
-	// 					return blue;
-	// 				} else {
-	// 					return red;
-	// 				}
-	// 			}
-	// 		})
-	// 		.style("fill-opacity", 0.4)
-	// 		.style("display", function(d) {
-	// 			if (d.awayCf - d.homeCf === 0) {
-	// 				return "none";
-	// 			} else {
-	// 				return "";
-	// 			}
-	// 		});
+	// 		.attr("r", function(d) { return r(d.toi); })
+	// 		.style("fill", "#f2f2f2");
 
-	// svg.select("g.bubbles").selectAll("line")
+	// Matchup triangles
+	// svg.select("g.bubbles").selectAll("path")
 	// 	.data(opponentPairingData)
-	// 	.enter().append("line")
-	// 		.attr("x1", function(d) { return x(d.p1); })
-	// 		.attr("y1", function(d) { return y(d.p2); })
-	// 		.attr("x2", function(d) { return x(d.p1); })
-	// 		.attr("y2", function(d) { return y(d.p2) - l(Math.abs(d.awayCf - d.homeCf)); })
-	// 		.style("stroke", function(d) {
-	// 			if (d.awayCf - d.homeCf > 0) {
-	// 				if (teams[0] === blueTeam) {
-	// 					return blue;
-	// 				} else {
-	// 					return red;
-	// 				}
-	// 			} else if (d.homeCf - d.awayCf > 0) {
-	// 				if (teams[1] === blueTeam) {
-	// 					return blue;
-	// 				} else {
-	// 					return red;
-	// 				}
-	// 			}
-	// 		})
-	// 		.style("stroke-width", 1)
-	// 		.style("stroke-linecap", "round")
-	// 		.style("stroke-opacity", 0.8)
-	// 		.style("display", function(d) {
-	// 			if (d.awayCf - d.homeCf === 0) {
-	// 				return "none";
+	// 	.enter().append("path")
+	// 	.attr("d", function(d) {
+	// 		var cx = x(d.p1);
+	// 		var cy = y(d.p2);
+	// 		var pt1 = (cx - 2) + " " + cy; // left corner
+	// 		var pt2 = cx + " " + (cy + 2); // bottom corner
+	// 		var pt3 = (cx + 2) + " " + cy; // right corner
+	// 		//var pt4 = cx + " " + (cy - l(d.awayCf - d.homeCf)); // top
+	// 		var pt4 = cx + " " + (cy - l(Math.abs(d.awayCf - d.homeCf)));
+	// 		//return "M" + pt1 + " " + "L" + pt2 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
+	// 		return "M" + pt1 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
+	// 	})
+	// 	.style("fill", function(d) {
+	// 		if (d.awayCf - d.homeCf > 0) {
+	// 			if (teams[0] === blueTeam) {
+	// 				return blue;
 	// 			} else {
-	// 				return "";
+	// 				return red;
 	// 			}
-	// 		});
+	// 		} else if (d.homeCf - d.awayCf > 0) {
+	// 			if (teams[1] === blueTeam) {
+	// 				return blue;
+	// 			} else {
+	// 				return red;
+	// 			}
+	// 		}
+	// 	})
+	// 	.style("fill-opacity", 0.6)
+	// 	.style("display", function(d) {
+	// 		if (d.awayCf - d.homeCf === 0) {
+	// 			return "none";
+	// 		} else {
+	// 			return "";
+	// 		}
+	// 	});
+
+	svg.select("g.bubbles").selectAll("circle.dot")
+		.data(opponentPairingData)
+		.enter().append("circle")
+			.attr("class", "dot")
+			.attr("cx", function(d) { return x(d.p1); })
+			.attr("cy", function(d) { return y(d.p2); })
+			.attr("r", 1.5)
+			.style("fill", function(d) {
+				if (d.awayCf - d.homeCf > 0) {
+					if (teams[0] === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
+				} else if (d.homeCf - d.awayCf > 0) {
+					if (teams[1] === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
+				} else {
+					return "#ccc";
+				}
+			})
+			.style("fill-opacity", 0.3)
+			.style("display", function(d) {
+				if (d.toi < 0) {
+					return "none"
+				} else {
+					return "";
+				}
+			});
+
+	svg.select("g.bubbles").selectAll("line")
+		.data(opponentPairingData)
+		.enter().append("line")
+			.attr("x1", function(d) { return x(d.p1); })
+			.attr("y1", function(d) { return y(d.p2); })
+			.attr("x2", function(d) { return x(d.p1) + xLen(d.toi); })
+			.attr("y2", function(d) { return y(d.p2) - l(Math.abs(d.awayCf - d.homeCf)); })
+			.style("stroke", function(d) {
+				if (d.awayCf - d.homeCf > 0) {
+					if (teams[0] === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
+				} else if (d.homeCf - d.awayCf > 0) {
+					if (teams[1] === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
+				} else {
+					return "#ccc";
+				}
+			})
+			.style("stroke-width", 1)
+			.style("stroke-linecap", "round")
+			.style("display", function(d) {
+				if (d.toi < 0) {
+					return "none"
+				} else {
+					return "";
+				}
+			});
 
 }
 
