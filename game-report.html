@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="width: 100%;">
 <head>
 	<meta charset="utf-8">
 	<title>Game Report</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
 </head>
-<body>
-	<h1 style="font: 24px Roboto; line-height: 24px; margin: 16px 0;">Shifts</h1>
-	<div style="height: auto; width: 100%; overflow-y: hidden; overflow-x: auto;">
+<body style="width: 100%;">
+	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 16px auto;">Shifts</h1>
+	<div id="shifts-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0 auto;">
 		<svg id="shift-chart"></svg>
 	</div>
-	<h1 style="font: 24px Roboto; line-height: 24px; margin: 16px 0;">Matchups</h1>
-	<div style="height: auto; width: 100%; overflow-y: hidden; overflow-x: auto;">
+	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 16px auto; margin-top: 80px;">Matchups</h1>
+	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0 auto;">
 		<svg id="matchup-chart"></svg>
 	</div>
 </body>
@@ -203,6 +203,10 @@ function appendShiftChart() {
 	// Fixed-sized svg
 	svg.style("height", svgHeight)
 		.style("width", svgWidth);
+
+	// Set parent div's width so that it can be centred
+	d3.select("#shifts-div")
+		.style("width", svgWidth + "px");
 
 	// Append a group for each team
 	d3.select("#shift-chart").selectAll("g.team")
@@ -597,6 +601,10 @@ function appendMatchupChart() {
 		.style("font-family", "Roboto")
 		.style("font-size", "12px");
 
+	// Set parent div's width so that it can be centred
+	d3.select("#matchups-div")
+		.style("width", shiftData[0].length * cellWidth + namesWidth + extraRightSpace + "px");
+
 	svg.append("g")
 		.attr("class", "names team0")
 		.attr("transform", "translate(" + namesWidth + ",0)");
@@ -644,9 +652,10 @@ function appendMatchupChart() {
 			.text(function(d) { return d.name; });
 
 	// Matchup bubbles
-	svg.select("g.bubbles").selectAll("circle")
+	svg.select("g.bubbles").selectAll("circle.bubble")
 		.data(opponentPairingData)
 		.enter().append("circle")
+			.attr("class", "bubble")
 			.attr("cx", function(d) { return x(d.p1); })
 			.attr("cy", function(d) { return y(d.p2); })
 			.attr("r", function(d) { return r(d.toi); })
@@ -659,38 +668,14 @@ function appendMatchupChart() {
 		.attr("d", function(d) {
 			var cx = x(d.p1);
 			var cy = y(d.p2);
-			if (d.awayCf - d.homeCf > 0) {
-				var pt1 = (cx - 2) + " " + cy; // left corner
-				var pt2 = cx + " " + (cy + 2); // bottom corner
-				var pt3 = (cx + 2) + " " + cy; // right corner
-				var pt4 = cx + " " + (cy - l(d.awayCf - d.homeCf)); // top
-				//return "M" + pt1 + " " + "L" + pt2 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
-				return "M" + pt1 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
-			} else if (d.homeCf - d.awayCf > 0) {
-				var pt1 = (cx - l(d.homeCf - d.awayCf)) + " " + cy;
-				var pt2 = cx + " " + (cy + 2);
-				var pt3 = (cx + 2) + " " + cy;
-				var pt4 = cx + " " + (cy - 2);
-				//return "M" + pt1 + " " + "L" + pt2 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
-				return "M" + pt1 + " " + "L" + pt2 + " " + "L" + pt4 + " Z";
-			}
+			var pt1 = (cx - 2) + " " + cy; // left corner
+			var pt2 = cx + " " + (cy + 2); // bottom corner
+			var pt3 = (cx + 2) + " " + cy; // right corner
+			//var pt4 = cx + " " + (cy - l(d.awayCf - d.homeCf)); // top
+			var pt4 = cx + " " + (cy - l(Math.abs(d.awayCf - d.homeCf)));
+			//return "M" + pt1 + " " + "L" + pt2 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
+			return "M" + pt1 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
 		})
-		.style("stroke", function(d) {
-			if (d.awayCf - d.homeCf > 0) {
-				if (teams[0] === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			} else if (d.homeCf - d.awayCf > 0) {
-				if (teams[1] === blueTeam) {
-					return blue;
-				} else {
-					return red;
-				}
-			}
-		})
-		.style("stroke-linejoin", "round")
 		.style("fill", function(d) {
 			if (d.awayCf - d.homeCf > 0) {
 				if (teams[0] === blueTeam) {
@@ -706,7 +691,7 @@ function appendMatchupChart() {
 				}
 			}
 		})
-		.style("fill-opacity", 0.4)
+		.style("fill-opacity", 0.6)
 		.style("display", function(d) {
 			if (d.awayCf - d.homeCf === 0) {
 				return "none";
@@ -715,50 +700,69 @@ function appendMatchupChart() {
 			}
 		});
 
+	// svg.select("g.bubbles").selectAll("circle.dot")
+	// 	.data(opponentPairingData)
+	// 	.enter().append("circle")
+	// 		.attr("class", "dot")
+	// 		.attr("cx", function(d) { return x(d.p1); })
+	// 		.attr("cy", function(d) { return y(d.p2); })
+	// 		.attr("r", 1.5)
+	// 		.style("fill", function(d) {
+	// 			if (d.awayCf - d.homeCf > 0) {
+	// 				if (teams[0] === blueTeam) {
+	// 					return blue;
+	// 				} else {
+	// 					return red;
+	// 				}
+	// 			} else if (d.homeCf - d.awayCf > 0) {
+	// 				if (teams[1] === blueTeam) {
+	// 					return blue;
+	// 				} else {
+	// 					return red;
+	// 				}
+	// 			}
+	// 		})
+	// 		.style("fill-opacity", 0.4)
+	// 		.style("display", function(d) {
+	// 			if (d.awayCf - d.homeCf === 0) {
+	// 				return "none";
+	// 			} else {
+	// 				return "";
+	// 			}
+	// 		});
+
 	// svg.select("g.bubbles").selectAll("line")
 	// 	.data(opponentPairingData)
 	// 	.enter().append("line")
-	// 	.attr("x1", function(d) { return x(d.p1); })
-	// 	.attr("y1", function(d) { return y(d.p2); })
-	// 	.attr("x2", function(d) {
-	// 		if (d.homeCf - d.awayCf > 0) {
-	// 			return x(d.p1) - l(d.homeCf - d.awayCf);
-	// 		} else {
-	// 			return x(d.p1);
-	// 		}
-	// 	})
-	// 	.attr("y2", function(d) {
-	// 		if (d.awayCf - d.homeCf > 0) {
-	// 			return y(d.p2) - l(d.awayCf - d.homeCf);
-	// 		} else {
-	// 			return y(d.p2);
-	// 		}
-	// 	})
-	// 	.style("stroke", function(d) {
-	// 		if (d.awayCf - d.homeCf > 0) {
-	// 			if (teams[0] === blueTeam) {
-	// 				return blue;
-	// 			} else {
-	// 				return red;
+	// 		.attr("x1", function(d) { return x(d.p1); })
+	// 		.attr("y1", function(d) { return y(d.p2); })
+	// 		.attr("x2", function(d) { return x(d.p1); })
+	// 		.attr("y2", function(d) { return y(d.p2) - l(Math.abs(d.awayCf - d.homeCf)); })
+	// 		.style("stroke", function(d) {
+	// 			if (d.awayCf - d.homeCf > 0) {
+	// 				if (teams[0] === blueTeam) {
+	// 					return blue;
+	// 				} else {
+	// 					return red;
+	// 				}
+	// 			} else if (d.homeCf - d.awayCf > 0) {
+	// 				if (teams[1] === blueTeam) {
+	// 					return blue;
+	// 				} else {
+	// 					return red;
+	// 				}
 	// 			}
-	// 		} else if (d.homeCf - d.awayCf > 0) {
-	// 			if (teams[1] === blueTeam) {
-	// 				return blue;
+	// 		})
+	// 		.style("stroke-width", 1)
+	// 		.style("stroke-linecap", "round")
+	// 		.style("stroke-opacity", 0.8)
+	// 		.style("display", function(d) {
+	// 			if (d.awayCf - d.homeCf === 0) {
+	// 				return "none";
 	// 			} else {
-	// 				return red;
+	// 				return "";
 	// 			}
-	// 		}
-	// 	})
-	// 	.style("stroke-width", 1)
-	// 	.style("stroke-linecap", "round")
-	// 	.style("stroke-opacity", 0.8)
-	// 	.style("display", function(d) {
-	// 		if (d.awayCf - d.homeCf === 0) {
-	// 			return "none";
-	// 		} else {
-	// 			return "";
-	// 		}
-	// 	});
+	// 		});
 
 }
 
