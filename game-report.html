@@ -11,7 +11,7 @@
 	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
 		<svg id="shift-chart" style="display: block; position: relative; margin: 0 auto;"></svg>
 	</div>
-	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 48px auto 24px auto;">Matchups</h1>
+	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 48px auto 16px auto;">Matchups</h1>
 	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
 		<svg id="matchup-chart" style="display: block; position: relative; margin: 0 auto;"></svg>
 	</div>
@@ -162,7 +162,7 @@ function appendShiftChart() {
 	var secondsPerPixel = 4;
 	var intermissionGap = 40;
 	var timelineWidth = 0;
-	var svgRightPadding = 30;
+	var svgRightPadding = 20;
 
 	/*
 	*
@@ -190,7 +190,9 @@ function appendShiftChart() {
 	*
 	*/
 
-	var svg = d3.select("body").select("#shift-chart");
+	var svg = d3.select("body").select("#shift-chart")
+		.style("font-family", "Roboto")
+		.style("font-size", "12px");
 
 	// Append a group for each team, and a group for the powerplay and goal indicators
 	svg.selectAll("g.team")
@@ -244,8 +246,6 @@ function appendShiftChart() {
 	var svgWidth = timelineWidth + namesWidth + namesRightPadding + svgRightPadding;
 
 	svg.style("background", "none")
-		.style("font-family", "Roboto")
-		.style("font-size", "12px")
 		.style("height", svgHeight + "px")
 		.style("width", svgWidth + "px");
 
@@ -644,7 +644,7 @@ function appendMatchupChart() {
 			.text(function(d) { return d.name; });
 
 	// Get height of away player names
-	namesHeight = d3.max(d3.select("g.names.team0").selectAll("text")[0], function(group) { return group.getBBox().width; });
+	namesHeight = d3.max(d3.select("g.names.team0").selectAll("text")[0], function(name) { return name.getBBox().width; });
 	namesHeight = Math.ceil(namesHeight);
 	svg.select("g.names.team0").selectAll("text")
 		.attr("y", namesHeight)
@@ -685,7 +685,6 @@ function appendMatchupChart() {
 		.attr("transform", "translate(0," + (namesHeight + namesBottomPadding) + ")");
 	svg.select("g.bubbles")
 		.attr("transform", "translate(" + (namesWidth + namesRightPadding) + "," + (namesHeight + namesBottomPadding) + ")");
-
 
 	svg.select("g.bubbles").selectAll("circle.dot")
 		.data(opponentPairingData)
