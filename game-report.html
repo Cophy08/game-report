@@ -162,6 +162,7 @@ function appendShiftChart() {
 	var secondsPerPixel = 4;
 	var intermissionGap = 40;
 	var timelineWidth = 0;
+	var svgRightPadding = 30;
 
 	/*
 	*
@@ -240,7 +241,7 @@ function appendShiftChart() {
 
 	timelineWidth = Math.ceil(dotR) + d3.sum(xScales, function(d) { return d.range()[1]; }) + intermissionGap * (periodData.length - 1);
 	var svgHeight = (shiftData[0].length + shiftData[1].length) * rowHeight + vGap;
-	var svgWidth = timelineWidth + namesWidth + namesRightPadding;
+	var svgWidth = timelineWidth + namesWidth + namesRightPadding + svgRightPadding;
 
 	svg.style("background", "none")
 		.style("font-family", "Roboto")
