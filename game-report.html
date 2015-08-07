@@ -153,13 +153,15 @@ d3.json(jsonUrl, function(error, json) {
 
 function appendShiftChart() {
 
-	var secondsPerPixel = 4;
 	var rowHeight = 16;
 	var dotR = 1.5;
-	var intermissionGap = 40;
-	var namesRightPadding = 20;
 	var vGap = 24;
-	var namesWidth = 120;
+
+	var namesWidth = 0;
+	var namesRightPadding = 20;
+	var secondsPerPixel = 4;
+	var intermissionGap = 40;
+	var timelineWidth = 0;
 
 	/*
 	*
@@ -181,35 +183,16 @@ function appendShiftChart() {
 			.range([0, Math.ceil(periodData[i].duration / secondsPerPixel)]);
 	});
 
-	var timelineWidth = Math.ceil(dotR) + d3.sum(xScales, function(d) { return d.range()[1]; }) + intermissionGap * (periodData.length - 1);
-
 	/*
 	*
-	* Append SVG and groups
+	* Append team groups and player names
 	*
 	*/
 
-	var svgHeight = (shiftData[0].length + shiftData[1].length) * rowHeight + vGap;
-	var svgWidth = timelineWidth + namesWidth + namesRightPadding;
-	var svg = d3.select("body").select("#shift-chart")
-		.style("background", "none")
-		.style("font-family", "Roboto")
-		.style("font-size", "12px");
+	var svg = d3.select("body").select("#shift-chart");
 
-	// Responsive svg: http://stackoverflow.com/a/25978298
-	// svg.attr("preserveAspectRatio", "xMinYMin meet")
-	// 	.attr("viewBox", "0 0 " + svgWidth + " " + svgHeight)
-
-	// Fixed-sized svg
-	svg.style("height", svgHeight)
-		.style("width", svgWidth);
-
-	// Set parent div's width so that it can be centred
-	// d3.select("#shifts-div")
-	// 	.style("width", svgWidth + "px");
-
-	// Append a group for each team
-	d3.select("#shift-chart").selectAll("g.team")
+	// Append a group for each team, and a group for the powerplay and goal indicators
+	svg.selectAll("g.team")
 		.data(teams)
 		.enter().append("g")
 			.attr("class", "team")
@@ -217,14 +200,63 @@ function appendShiftChart() {
 			.attr("transform", function(d, i) {
 				return "translate(0," + (i * (shiftData[i].length * rowHeight + vGap)) + ")";
 			});
-
-	d3.select("#shift-chart").append("g")
+	svg.append("g")
 		.attr("class", "powerplay")
 		.attr("transform", function(d, i) { return "translate(0," + (shiftData[0].length * rowHeight) + ")"; });
 
-	// Append group for player names
+	// Append player names
 	d3.selectAll("g.team").append("g")
 		.attr("class", "names");
+
+	teams.forEach(function(team, i) {
+
+		// Append player names
+		d3.select("#team" + i).select("g.names").selectAll("text.name")
+			.data(shiftData[i])
+			.enter().append("text")
+				.attr("class", "name")
+				.attr("y", function(d) { return yScales[i](d.playerId); })
+				.style("alignment-baseline", "middle")
+				.style("fill", function(d) {
+					if (d.team === blueTeam) {
+						return blue;
+					} else {
+						return red;
+					}
+				})
+				.style("fill-opacity", 0.6)
+				.style("text-anchor", "end")
+				.text(function(d) { return d.name; });
+	});
+
+	/*
+	*
+	* Get width of the player names and set svg dimensions
+	*
+	*/
+
+	namesWidth = d3.max(d3.selectAll("g.names")[0], function(group) { return group.getBBox().width; });
+	namesWidth = Math.ceil(namesWidth);
+
+	timelineWidth = Math.ceil(dotR) + d3.sum(xScales, function(d) { return d.range()[1]; }) + intermissionGap * (periodData.length - 1);
+	var svgHeight = (shiftData[0].length + shiftData[1].length) * rowHeight + vGap;
+	var svgWidth = timelineWidth + namesWidth + namesRightPadding;
+
+	svg.style("background", "none")
+		.style("font-family", "Roboto")
+		.style("font-size", "12px")
+		.style("height", svgHeight + "px")
+		.style("width", svgWidth + "px");
+
+	// Position names
+	svg.selectAll("g.names").selectAll("text.name")
+		.attr("x", namesWidth);
+
+	/*
+	*
+	* Append and position groups for periods and intermissions
+	*
+	*/
 
 	// In each team group and the powerplay group, append new groups for each period
 	d3.selectAll("g.team, g.powerplay").selectAll("g.period")
@@ -260,7 +292,6 @@ function appendShiftChart() {
 				return "translate(" + xShift + ",0)";
 			});
 
-
 	// For each team and period, append groups for players on the team
 	teams.forEach(function(team, i) {
 		d3.select("#team" + i).selectAll("g.period").selectAll("g.player")
@@ -271,30 +302,11 @@ function appendShiftChart() {
 
 	/*
 	*
-	* Append elements to groups
+	* Append intermission elements
 	*
 	*/
 
 	teams.forEach(function(team, i) {
-
-		// Append player names
-		d3.select("#team" + i).select("g.names").selectAll("text.name")
-			.data(shiftData[i])
-			.enter().append("text")
-				.attr("class", "name")
-				.attr("x", namesWidth)
-				.attr("y", function(d) { return yScales[i](d.playerId); })
-				.style("alignment-baseline", "middle")
-				.style("fill", function(d) {
-					if (d.team === blueTeam) {
-						return blue;
-					} else {
-						return red;
-					}
-				})
-				.style("fill-opacity", 0.6)
-				.style("text-anchor", "end")
-				.text(function(d) { return d.name; });
 
 		// Append player numbers
 		d3.select("#team" + i).selectAll("g.intermission").selectAll("text.number")
@@ -313,11 +325,17 @@ function appendShiftChart() {
 					}
 				})
 				.style("fill-opacity", 0.6)
-				.style("font-size", 10)
+				.style("font-size", "10px")
 				.text(function(d) { return d.number; });
 	});
 
-	// Append shift lines to each player group - only for shifts in the period
+	/*
+	*
+	* Append shift lines and event dots
+	*
+	*/
+
+	// Append shift lines to each player group
 	periodData.forEach(function(period) {
 		d3.selectAll("g.team").selectAll(".period.period" + period.period).selectAll("g.player").selectAll("line.shift")
 			.data(function(d) {
@@ -396,7 +414,7 @@ function appendShiftChart() {
 				d3.select(g).append("circle")
 					.attr("cx", function(d) { return xScales[d.period - 1](d.time); })
 					.attr("cy", function() { return yScales[i](s); })
-					.style("r", dotR)
+					.attr("r", dotR)
 					.style("fill", function(d) {
 						if (d.eventTeam === blueTeam) {
 							return blue;
@@ -451,7 +469,7 @@ function appendShiftChart() {
 
 	/*
 	*
-	* Append powerplay markers
+	* Append powerplay and goal markers
 	*
 	*/
 
