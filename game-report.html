@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" style="width: 100%;">
+<html lang="en" style="width: 100%; overflow-x: hidden;">
 <head>
 	<meta charset="utf-8">
 	<title>Game Report</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
 </head>
-<body style="width: 100%;">
+<body style="width: 100%; overflow-x: hidden;">
 	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 16px auto;">Shifts</h1>
 	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
 		<svg id="shift-chart" style="display: block; position: relative; margin: 0 auto;"></svg>
 	</div>
-	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 16px auto; margin-top: 80px;">Matchups</h1>
+	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 48px auto 24px auto;">Matchups</h1>
 	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
 		<svg id="matchup-chart" style="display: block; position: relative; margin: 0 auto;"></svg>
 	</div>
@@ -521,10 +521,12 @@ function appendShiftChart() {
 function appendMatchupChart() {
 
 	var cellHeight = 24;
-	var cellWidth = 24;
+	var cellWidth = 28;
 	var namesHeight = 120;
+	var namesBottomPadding = 10;
 	var namesWidth = 120;
-	var extraRightSpace = 40;
+	var namesRightPadding = 5;
+	var svgRightPadding = 40;
 
 	/*
 	*
@@ -614,33 +616,22 @@ function appendMatchupChart() {
 	*/
 
 	var svg = d3.select("#matchup-chart")
-		.attr("height", shiftData[1].length * cellHeight + namesHeight)
-		.attr("width", shiftData[0].length * cellWidth + namesWidth + extraRightSpace)
 		.style("background", "none")
 		.style("font-family", "Roboto")
 		.style("font-size", "12px");
 
-	// Set parent div's width so that it can be centred
-	// d3.select("#matchups-div")
-	// 	.style("width", shiftData[0].length * cellWidth + namesWidth + extraRightSpace + "px");
-
 	svg.append("g")
-		.attr("class", "names team0")
-		.attr("transform", "translate(" + namesWidth + ",0)");
+		.attr("class", "names team0");
 	svg.append("g")
-		.attr("class", "names team1")
-		.attr("transform", "translate(0," + namesHeight + ")");
+		.attr("class", "names team1");
 	svg.append("g")
-		.attr("class", "bubbles")
-		.attr("transform", "translate(" + namesWidth + "," + namesHeight + ")");
+		.attr("class", "bubbles");
 
 	// Away team player names
 	svg.select("g.names.team0").selectAll("text")
 		.data(shiftData[0])
 		.enter().append("text")
-			.attr("transform", function(d) { return "rotate(-60 " + (x(d.playerId) + 5) + "," + (namesHeight - 5)  + ")"; })
-			.attr("x", function(d) { return x(d.playerId) + 5; })
-			.attr("y", namesHeight - 5)
+			.attr("x", function(d) { return x(d.playerId); })
 			.style("alignment-baseline", "middle")
 			.style("fill", function() {
 				if (teams[0] === blueTeam) {
@@ -652,11 +643,22 @@ function appendMatchupChart() {
 			.style("fill-opacity", 0.6)
 			.text(function(d) { return d.name; });
 
+	// Get height of away player names
+	namesHeight = d3.max(d3.select("g.names.team0").selectAll("text")[0], function(group) { return group.getBBox().width; });
+	namesHeight = Math.ceil(namesHeight);
+	svg.select("g.names.team0").selectAll("text")
+		.attr("y", namesHeight)
+		.attr("transform", function(d) { return "rotate(-60 " + x(d.playerId) + "," + namesHeight + ")"; });
+
+	// Set svg dimensions
+	svgRightPadding = 0.5 / namesHeight; // cos(60') = 0.5;
+	svg.attr("height", shiftData[1].length * cellHeight + namesHeight + namesBottomPadding)
+		.attr("width", shiftData[0].length * cellWidth + namesWidth + namesRightPadding + svgRightPadding)
+
 	// Home team player names
 	svg.select("g.names.team1").selectAll("text")
 		.data(shiftData[1])
 		.enter().append("text")
-			.attr("x", namesWidth)
 			.attr("y", function(d) { return y(d.playerId); })
 			.style("alignment-baseline", "middle")
 			.style("text-anchor", "end")
@@ -670,54 +672,20 @@ function appendMatchupChart() {
 			.style("fill-opacity", 0.6)
 			.text(function(d) { return d.name; });
 
-	// Matchup bubbles
-	// svg.select("g.bubbles").selectAll("circle.bubble")
-	// 	.data(opponentPairingData)
-	// 	.enter().append("circle")
-	// 		.attr("class", "bubble")
-	// 		.attr("cx", function(d) { return x(d.p1); })
-	// 		.attr("cy", function(d) { return y(d.p2); })
-	// 		.attr("r", function(d) { return r(d.toi); })
-	// 		.style("fill", "#f2f2f2");
+	// Get width of home player names
+	namesWidth = d3.max(d3.select("g.names.team1").selectAll("text")[0], function(group) { return group.getBBox().width; });
+	namesWidth = Math.ceil(namesWidth);
+	svg.select("g.names.team1").selectAll("text")
+		.attr("x", namesWidth);
 
-	// Matchup triangles
-	// svg.select("g.bubbles").selectAll("path")
-	// 	.data(opponentPairingData)
-	// 	.enter().append("path")
-	// 	.attr("d", function(d) {
-	// 		var cx = x(d.p1);
-	// 		var cy = y(d.p2);
-	// 		var pt1 = (cx - 2) + " " + cy; // left corner
-	// 		var pt2 = cx + " " + (cy + 2); // bottom corner
-	// 		var pt3 = (cx + 2) + " " + cy; // right corner
-	// 		//var pt4 = cx + " " + (cy - l(d.awayCf - d.homeCf)); // top
-	// 		var pt4 = cx + " " + (cy - l(Math.abs(d.awayCf - d.homeCf)));
-	// 		//return "M" + pt1 + " " + "L" + pt2 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
-	// 		return "M" + pt1 + " " + "L" + pt3 + " " + "L" + pt4 + " Z";
-	// 	})
-	// 	.style("fill", function(d) {
-	// 		if (d.awayCf - d.homeCf > 0) {
-	// 			if (teams[0] === blueTeam) {
-	// 				return blue;
-	// 			} else {
-	// 				return red;
-	// 			}
-	// 		} else if (d.homeCf - d.awayCf > 0) {
-	// 			if (teams[1] === blueTeam) {
-	// 				return blue;
-	// 			} else {
-	// 				return red;
-	// 			}
-	// 		}
-	// 	})
-	// 	.style("fill-opacity", 0.6)
-	// 	.style("display", function(d) {
-	// 		if (d.awayCf - d.homeCf === 0) {
-	// 			return "none";
-	// 		} else {
-	// 			return "";
-	// 		}
-	// 	});
+	// Position groups
+	svg.select("g.names.team0")
+		.attr("transform", "translate(" + (namesWidth + namesRightPadding) + ",0)");
+	svg.select("g.names.team1")
+		.attr("transform", "translate(0," + (namesHeight + namesBottomPadding) + ")");
+	svg.select("g.bubbles")
+		.attr("transform", "translate(" + (namesWidth + namesRightPadding) + "," + (namesHeight + namesBottomPadding) + ")");
+
 
 	svg.select("g.bubbles").selectAll("circle.dot")
 		.data(opponentPairingData)
