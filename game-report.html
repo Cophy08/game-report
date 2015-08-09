@@ -6,12 +6,12 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
 </head>
-<body style="width: 100%; overflow-x: hidden; margin: 0; padding: 0;">
-	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 16px auto;">Shifts</h1>
+<body style="width: 100%; overflow-x: hidden; margin: 0; padding: 0; padding-bottom: 40px;">
+	<h1 style="display: block; text-align: center; font: 20px Roboto; line-height: 24px; margin: 20px auto; color: #777;">Shifts</h1>
 	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
 		<svg id="shift-chart" style="display: block; position: relative; margin: 0 auto; padding: 0;"></svg>
 	</div>
-	<h1 style="display: block; text-align: center; font: 24px Roboto; line-height: 24px; margin: 48px auto 16px auto;">Matchups</h1>
+	<h1 style="display: block; text-align: center; font: 20px Roboto; line-height: 24px; margin: 48px auto 8px auto; color: #777;">5-on-5 Matchups</h1>
 	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
 		<svg id="matchup-chart" style="display: block; position: relative; margin: 0 auto; padding: 0;"></svg>
 	</div>
@@ -525,12 +525,12 @@ function appendMatchupChart() {
 	var namesHeight = 120;
 	var namesBottomPadding = 10;
 	var namesWidth = 120;
-	var namesRightPadding = 5;
+	var namesRightPadding = 0;
 	var svgRightPadding = 40;
 
 	/*
 	*
-	* Get corsis for/against for each matchup
+	* Get corsis and goals for/against for each matchup
 	*
 	*/
 	opponentPairingData.forEach(function(m) {
@@ -552,20 +552,32 @@ function appendMatchupChart() {
 				}
 			});
 
-		// Count corsi events for each player
+		// Count corsi and goal events for each player
 		var homeCf = 0;
 		var awayCf = 0;
+		var homeGf = 0;
+		var awayGf = 0;
 		matchupEvents.forEach(function(e) {
 			if (e.eventTeam === teams[0]) {
 				awayCf += 1;
 			} else if (e.eventTeam === teams[1]) {
 				homeCf += 1;
 			}
+
+			if (e.eventType === "goal") {
+				if (e.eventTeam === teams[0]) {
+					awayGf += 1;
+				} else if (e.eventTeam === teams[1]) {
+					homeGf += 1;
+				}
+			}
 		});
 
 		// Record matchup results
 		m.homeCf = homeCf;
 		m.awayCf = awayCf;
+		m.homeGf = homeGf;
+		m.awayGf = awayGf;
 	});
 
 	/*
@@ -651,7 +663,7 @@ function appendMatchupChart() {
 		.attr("transform", function(d) { return "rotate(-45 " + x(d.playerId) + "," + namesHeight + ")"; });
 
 	// Set svg dimensions
-	svgRightPadding = 0.5 / namesHeight; // cos(60') = 0.5;
+	svgRightPadding = 0.7 / namesHeight; // cos(45') = 0.71;
 	svg.attr("height", shiftData[1].length * cellHeight + namesHeight + namesBottomPadding)
 		.attr("width", shiftData[0].length * cellWidth + namesWidth + namesRightPadding + svgRightPadding)
 
@@ -692,15 +704,15 @@ function appendMatchupChart() {
 			.attr("class", "dot")
 			.attr("cx", function(d) { return x(d.p1); })
 			.attr("cy", function(d) { return y(d.p2); })
-			.attr("r", 2.5)
+			.attr("r", 3.5)
 			.style("fill", function(d) {
-				if (d.awayCf - d.homeCf > 0) {
+				if (d.awayGf - d.homeGf > 0) {
 					if (teams[0] === blueTeam) {
 						return blue;
 					} else {
 						return red;
 					}
-				} else if (d.homeCf - d.awayCf > 0) {
+				} else if (d.homeGf - d.awayGf > 0) {
 					if (teams[1] === blueTeam) {
 						return blue;
 					} else {
@@ -710,75 +722,12 @@ function appendMatchupChart() {
 					return "#aaa";
 				}
 			})
-			.style("fill-opacity", 0.15)
+			.style("fill-opacity", 0.2)
 			.style("display", function(d) {
-				if (d.toi < 0) {
+				if (d.awayGf === 0 && d.homeGf === 0) {
 					return "none"
 				} else {
-					return "none";
-				}
-			});
-
-	svg.select("g.bubbles").selectAll("line.corsi")
-		.data(opponentPairingData)
-		.enter().append("line")
-			.attr("class", "corsi")
-			//.attr("x1", function(d) { return x(d.p1); })
-			.attr("x1", function(d) { return x(d.p1) - cellWidth/2; })
-			//.attr("y1", function(d) { return y(d.p2); })
-			.attr("y1", function(d) { return y(d.p2) - cellHeight/2; })
-			//.attr("x2", function(d) { return x(d.p1); })
-			.attr("x2", function(d) { return x(d.p1) - cellWidth/2; })
-			.attr("y2", function(d) { return y(d.p2) + cellHeight/2; })
-			// .attr("y2", function(d) { return y(d.p2) - l(Math.abs(d.awayCf - d.homeCf)); })
-			.style("stroke", function(d) {
-				return "#f5f5f5";
-				// if (d.awayCf - d.homeCf > 0) {
-				// 	if (teams[0] === blueTeam) {
-				// 		return blue;
-				// 	} else {
-				// 		return red;
-				// 	}
-				// } else if (d.homeCf - d.awayCf > 0) {
-				// 	if (teams[1] === blueTeam) {
-				// 		return blue;
-				// 	} else {
-				// 		return red;
-				// 	}
-				// } else {
-				// 	return "#ccc";
-				// }
-			})
-			.style("stroke-width", 1)
-			.style("stroke-linecap", "round")
-			.style("display", function(d) {
-				if (d.toi < 0) {
-					return "none"
-				} else {
-					return "none";
-				}
-			});
-
-	svg.select("g.bubbles").selectAll("line.toi")
-		.data(opponentPairingData)
-		.enter().append("line")
-			.attr("class", "toi")
-			//.attr("x1", function(d) { return x(d.p1); })
-			.attr("x1", function(d) { return x(d.p1) - cellWidth/2; })
-			//.attr("y1", function(d) { return y(d.p2); })
-			.attr("y1", function(d) { return y(d.p2) - cellHeight/2; })
-			//.attr("x2", function(d) { return x(d.p1) + xLen(d.toi); })
-			.attr("x2", function(d) { return x(d.p1) + cellWidth/2; })
-			//.attr("y2", function(d) { return y(d.p2); })
-			.attr("y2", function(d) { return y(d.p2) - cellHeight/2; })
-			.style("stroke", "#f5f5f5")
-			.style("stroke-width", 1)
-			.style("stroke-linecap", "round")
-			.style("display", function(d) {
-				if (d.toi < 0) {
-					return "none"
-				} else {
-					return "none";
+					return "";
 				}
 			});
 
@@ -808,7 +757,7 @@ function appendMatchupChart() {
 				}
 			})
 			.style("stroke-width", 1)
-			.style("stroke-opacity", 1)
+			.style("stroke-opacity", 0.8)
 			.style("stroke-linecap", "round")
 			.style("display", function(d) {
 				if (d.toi <= 0) {
