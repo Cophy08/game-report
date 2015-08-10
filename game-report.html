@@ -241,7 +241,7 @@ function appendShiftChart() {
 	namesWidth = d3.max(d3.selectAll("g.names")[0], function(group) { return group.getBBox().width; });
 	namesWidth = Math.ceil(namesWidth);
 
-	timelineWidth = Math.ceil(dotR) + d3.sum(xScales, function(d) { return d.range()[1]; }) + intermissionGap * (periodData.length - 1);
+	timelineWidth = Math.ceil(dotR*3) + d3.sum(xScales, function(d) { return d.range()[1]; }) + intermissionGap * (periodData.length - 1); //dotR*3 to account for the goal outline effect
 	var svgHeight = (shiftData[0].length + shiftData[1].length) * rowHeight + vGap;
 	var svgWidth = timelineWidth + namesWidth + namesRightPadding + svgRightPadding;
 
@@ -401,7 +401,7 @@ function appendShiftChart() {
 				.style("stroke-opacity", 0.15);
 		});
 
-		// Append event dots
+		// Append event lines and dots
 		var propertyName;
 		if (i === 0) {
 			propertyName = "awaySkaters";
@@ -412,58 +412,63 @@ function appendShiftChart() {
 		var eventGroups = d3.select("#team" + i).selectAll("g.event");
 		eventGroups[0].forEach(function(g) {
 			g.__data__[propertyName].filter(function(s) { return s > 0; }).forEach(function(s) {
-				d3.select(g).append("circle")
-					.attr("cx", function(d) { return xScales[d.period - 1](d.time); })
-					.attr("cy", function() { return yScales[i](s); })
-					.attr("r", dotR)
-					.style("fill", function(d) {
-						if (d.eventTeam === blueTeam) {
-							return blue;
-						} else {
-							return red;
-						}
-					});
+				if (g.__data__["eventType"] === "goal") {
+					// Append circles for goals
+					d3.select(g).append("circle")
+						.attr("cx", function(d) { return xScales[d.period - 1](d.time); })
+						.attr("cy", function() { return yScales[i](s); })
+						.attr("r", dotR)
+						.style("fill", function(d) {
+							if (d.eventTeam === blueTeam) {
+								return blue;
+							} else {
+								return red;
+							}
+						});
+				} else {
+					// Append lines for non-goals
+					d3.select(g).append("line")
+						.attr("x1", function(d) { return xScales[d.period - 1](d.time) - 2; })
+						.attr("x2", function(d) { return xScales[d.period - 1](d.time) + 2; })
+						.attr("y1", function() { return yScales[i](s); })
+						.attr("y2", function() { return yScales[i](s); })
+						.style("stroke", function(d) {
+							if (d.eventTeam === blueTeam) {
+								return blue;
+							} else {
+								return red;
+							}
+						});
+				}
 			});
 		});
 
-		// Append goal circles
+		// Highlight the goal scorer
 		var eventGroups = d3.select("#team" + i).selectAll("g.goal");
 		eventGroups[0].forEach(function(g) {
 			g.__data__[propertyName].filter(function(s) { return s > 0; }).forEach(function(s) {
-				d3.select(g).append("circle")
-					.attr("cx", function(d) { return xScales[d.period - 1](d.time); })
-					.attr("cy", function() { return yScales[i](s); })
-					.style("r", function(d) {
-						if (d.eventP1 === s) {
-							return dotR * 3 - 0.5;
-						} else {
-							return dotR * 3;
-						}
-					})
-					.style("fill-opacity", 0.2)
-					.style("fill", function(d) {
-						if (d.eventP1 !== 1) {
+				if (g.__data__["eventP1"] === s) {
+					d3.select(g).append("circle")
+						.attr("cx", function(d) { return xScales[d.period - 1](d.time); })
+						.attr("cy", function() { return yScales[i](s); })
+						.style("r", dotR * 3)
+						.style("fill-opacity", 0)
+						.style("fill", function(d) {
 							if (d.eventTeam === blueTeam) {
 								return blue;
 							} else {
 								return red;
 							}
-						} else {
-							return "none";
-						}
-					})
-					.style("stroke-opacity", 0.6)
-					.style("stroke", function(d) {
-						if (d.eventP1 === s) {
+						})
+						.style("stroke-opacity", 0.6)
+						.style("stroke", function(d) {
 							if (d.eventTeam === blueTeam) {
 								return blue;
 							} else {
 								return red;
 							}
-						} else {
-							return "none";
-						}
-					});
+						});
+				}
 			});
 		});
 	});
@@ -704,8 +709,8 @@ function appendMatchupChart() {
 			.attr("class", "dot")
 			.attr("cx", function(d) { return x(d.p1); })
 			.attr("cy", function(d) { return y(d.p2); })
-			.attr("r", 3.5)
-			.style("fill", function(d) {
+			.attr("r", 2.5)
+			.style("stroke", function(d) {
 				if (d.awayGf - d.homeGf > 0) {
 					if (teams[0] === blueTeam) {
 						return blue;
@@ -719,10 +724,12 @@ function appendMatchupChart() {
 						return red;
 					}
 				} else {
-					return "#aaa";
+					//return "#888";
+					return "none";
 				}
 			})
-			.style("fill-opacity", 0.2)
+			.style("fill", "none")
+			.style("stroke-opacity", 0.6)
 			.style("display", function(d) {
 				if (d.awayGf === 0 && d.homeGf === 0) {
 					return "none"
@@ -753,11 +760,11 @@ function appendMatchupChart() {
 						return red;
 					}
 				} else {
-					return "#aaa";
+					return "#888";
 				}
 			})
 			.style("stroke-width", 1)
-			.style("stroke-opacity", 0.8)
+			.style("stroke-opacity", 0.95)
 			.style("stroke-linecap", "round")
 			.style("display", function(d) {
 				if (d.toi <= 0) {
