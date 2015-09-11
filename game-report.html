@@ -34,7 +34,11 @@ var blue = "#0000ee";
 var season = 2014;
 //var gameId = 30324;
 var gameId = 30416;
-var jsonUrl = "http://127.0.0.1:5000/get-game-data?season=" + season + "&gameId=" + gameId;
+
+//var flaskUrl = "http://127.0.0.1:5000/databot/get-game-data/?";
+var flaskUrl = "http://datarink.com/databot/get-game-data/?";
+var jsonUrl = flaskUrl + "season=" + season + "&gameId=" + gameId;
+console.log(jsonUrl);
 
 d3.json(jsonUrl, function(error, json) {
 
