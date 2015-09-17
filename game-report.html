@@ -31,14 +31,20 @@ var blueTeam = "";
 var red = "#ee0000";
 var blue = "#0000ee";
 
-var season = 2014;
-//var gameId = 30324;
-var gameId = 30416;
+// Parse parameters in the url and select the specified team and game
+// Season and gameId must be stored as strings
+var season;
+var gameId;
+var urlParameters = window.location.search.substring(1).split("&");
+for (var i = 0; i < urlParameters.length; i++) {
+	if (urlParameters[i].toLowerCase().indexOf("gameid=") > -1) gameId = urlParameters[i].toLowerCase().substring(urlParameters[i].indexOf("=")+1);
+	else if (urlParameters[i].toLowerCase().indexOf("season=") > -1) season = urlParameters[i].toLowerCase().substring(urlParameters[i].indexOf("=")+1);
+}
 
 //var flaskUrl = "http://127.0.0.1:5000/databot/get-game-data/?";
 var flaskUrl = "http://datarink.com/databot/get-game-data/?";
 var jsonUrl = flaskUrl + "season=" + season + "&gameId=" + gameId;
-console.log(jsonUrl);
+//console.log(jsonUrl);
 
 d3.json(jsonUrl, function(error, json) {
 
