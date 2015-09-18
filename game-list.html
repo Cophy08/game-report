@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" style="width: 100%; overflow-x: hidden;">
+<head>
+	<meta charset="utf-8">
+	<title>Game List</title>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
+</head>
+<body style="width: 100%; overflow-x: hidden; margin: 0; padding: 0; padding-bottom: 40px;">
+</body>
+<script>
+
+var gameData = [];
+
+/*
+*
+* Get today's date in the format expected by get-game-list.py
+*
+*/
+
+var today = new Date();
+var dd = today.getDate();
+var mm = today.getMonth() + 1; // January is 0
+var yyyy = today.getFullYear();
+
+if (dd < 10) { dd = "0" + dd; }
+if (mm < 10) { mm = "0" + mm; }
+
+dd = "22";
+mm = "10";
+yyyy = "2014";
+
+today = dd + "-" + mm + "-" + yyyy;
+
+/*
+*
+* Query for data
+*
+*/
+
+var flaskUrl = "http://127.0.0.1:5000/databot/get-game-list/?";
+//var flaskUrl = "http://datarink.com/databot/get-game-list/?";
+var jsonUrl = flaskUrl + "date=" + today
+
+var gameReportUrl = "http://localhost:8888/game-report/game-report.html";
+
+d3.json(jsonUrl, function(error, json) {
+	if (!json || json.length <= 0) {
+		d3.select("body").append("p")
+			.text("No games played in the past 7 days")
+	} else {
+		gameData = d3.nest()
+			.key(function(d) { return d.date; })
+			.entries(json);
+		updateGameList();
+	}
+});
+
+function updateGameList() {
+	console.log(gameData);
+	var dateDivs = d3.select("body").selectAll("div.date")
+		.data(gameData);
+	dateDivs.enter().append("div")
+		.attr("class", "date")
+		.style("margin-bottom", "20px");
+
+	var gameLinks = dateDivs.selectAll("a.game")
+		.data(function(d) { return d.values; });
+	gameLinks.enter().append("a")
+		.attr("class", "game")
+		.style("display", "block")
+		.attr("href", function(d) { return gameReportUrl + "?date=" + d.date + "&team=" + d.homeTeam; })
+		.text(function(d) { return d.gameId + ": " + d.awayTeam + " " + d.awayScore + " at " + d.homeTeam + " " + d.homeScore; });
+}
+
+</script>
+</body>
+</html>
+
+
