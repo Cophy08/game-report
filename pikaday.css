@@ -6,13 +6,14 @@
  */
 
 .pika-single {
+    box-sizing: border-box;
     z-index: 9999;
     display: block;
     position: relative;
     color: #222;
     border: 1px solid #ddf;
     padding: 8px 30px 16px 10px;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: Courier, 'Courier New', monospace;
 }
 
 /*
@@ -59,7 +60,13 @@ http://nicolasgallagher.com/micro-clearfix-hack/
     line-height: 20px;
     font-weight: 400;
     background-color: #fff;
+    color: #777;
 }
+
+.pika-label:hover {
+    color: #222;
+}
+
 .pika-title select {
     cursor: pointer;
     position: absolute;
@@ -96,7 +103,7 @@ http://nicolasgallagher.com/micro-clearfix-hack/
 
 .pika-prev:hover,
 .pika-next:hover {
-    opacity: 1;
+    opacity: 0.8;
 }
 
 .pika-prev,
@@ -138,8 +145,8 @@ http://nicolasgallagher.com/micro-clearfix-hack/
 }
 
 .pika-table th {
-    color: #999;
-    font-size: 12px;
+    color: #ccc;
+    font-size: 14px;
     line-height: 34px;
     height: 34px;
     font-weight: 400;
@@ -158,12 +165,12 @@ http://nicolasgallagher.com/micro-clearfix-hack/
     margin: 0;
     width: 100%;
     padding: 5px;
-    color: #666;
+    color: #777;
     font-size: 13px;
     line-height: 24px;
     text-align: right;
     background: none;
-    font-family: Courier;
+    font-family: Courier, 'Courier New', monospace;
 }
 
 .pika-week {
@@ -199,8 +206,7 @@ http://nicolasgallagher.com/micro-clearfix-hack/
 .is-disabled .pika-button {
     pointer-events: none;
     cursor: default;
-    color: #999;
-    opacity: .3;
+    color: #ddd;
 }
 
 .pika-button:hover {

@@ -40,8 +40,8 @@ for (var i = 0; i < urlParameters.length; i++) {
 	else if (urlParameters[i].toLowerCase().indexOf("date=") > -1) date = urlParameters[i].toLowerCase().substring(urlParameters[i].indexOf("=")+1);
 }
 
-var flaskUrl = "http://127.0.0.1:5000/databot/get-game-data/?";
-//var flaskUrl = "http://datarink.com/databot/get-game-data/?";
+//var flaskUrl = "http://127.0.0.1:5000/databot/get-game-data/?";
+var flaskUrl = "http://datarink.com/databot/get-game-data/?";
 var jsonUrl = flaskUrl + "team=" + team + "&date=" + date;
 console.log(jsonUrl);
 
