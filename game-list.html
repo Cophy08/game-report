@@ -1,12 +1,59 @@
 <!DOCTYPE html>
-<html lang="en" style="width: 100%; overflow-x: hidden;">
+<html lang="en">
 <head>
 	<meta charset="utf-8">
 	<title>Game List</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" type="text/css" href="game-list.css">
+	<link rel="stylesheet" type="text/css" href="pikaday.css">
 </head>
-<body style="width: 100%; overflow-x: hidden; margin: 0; padding: 0; padding-bottom: 40px;">
+<body>
+	<h1>Game Reports</h1>
+	<div>
+		<div id="games">
+		</div>
+		<div class="block">
+		<div class="date other">Another game</div>
+			<div class="game-list">
+				<select id="team">
+					<option value="ana">ANA</option>
+					<option value="ari">ARI</option>
+					<option value="bos">BOS</option>
+					<option value="buf">BUF</option>
+					<option value="car">CAR</option>
+					<option value="cbj">CBJ</option>
+					<option value="cgy">CGY</option>
+					<option value="chi">CHI</option>
+					<option value="col">COL</option>
+					<option value="dal">DAL</option>
+					<option value="det">DET</option>
+					<option value="edm">EDM</option>
+					<option value="fla">FLA</option>
+					<option value="l.a">LA</option>
+					<option value="min">MIN</option>
+					<option value="mtl">MTL</option>
+					<option value="n.j">NJ</option>
+					<option value="nsh">NSH</option>
+					<option value="nyi">NYI</option>
+					<option value="nyr">NYR</option>
+					<option value="ott">OTT</option>
+					<option value="phi">PHI</option>
+					<option value="pit">PIT</option>
+					<option value="t.b">TB</option>
+					<option value="tor">TOR</option>
+					<option value="s.j">SJ</option>
+					<option value="stl">STL</option>
+					<option value="van">VAN</option>
+					<option value="wpg">WPG</option>
+					<option value="wsh">WSH</option>
+				</select>
+				<div id="calendar">
+					<input type="text" id="datepicker">
+				</div>
+				<a href="#" id="go">Go</a>
+			</div>
+		</div>
+	</div>
 </body>
 <script>
 
@@ -52,27 +99,61 @@ d3.json(jsonUrl, function(error, json) {
 		gameData = d3.nest()
 			.key(function(d) { return d.date; })
 			.entries(json);
+		// Convert keys to date objects
+		gameData.forEach(function(d) {
+			var year = d.key.substring(d.key.lastIndexOf("-") + 1);
+			var month = d.key.substring(d.key.indexOf("-") + 1, d.key.lastIndexOf("-"));
+			var day = d.key.substring(0, d.key.indexOf("-"));
+			var dateObj = new Date(year, month - 1, day);
+			d.date = dateObj;
+		})
+		// Sort dates in descending order
+		gameData = gameData.sort(function(a, b) { return b.date - a.date; });
 		updateGameList();
 	}
 });
-
 function updateGameList() {
 	console.log(gameData);
-	var dateDivs = d3.select("body").selectAll("div.date")
+	var dateDivs = d3.select("#games").selectAll("div.block")
 		.data(gameData);
 	dateDivs.enter().append("div")
+		.attr("class", "block");
+	dateDivs.append("div")
 		.attr("class", "date")
-		.style("margin-bottom", "20px");
-
-	var gameLinks = dateDivs.selectAll("a.game")
+		.text(function(d) {
+			var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+			return monthNames[d.date.getMonth()] + " " + d.date.getDate();
+		});
+	var gameLists = dateDivs.append("div")
+		.attr("class", "game-list");
+	var gameLinks = gameLists.selectAll("a.game")
 		.data(function(d) { return d.values; });
 	gameLinks.enter().append("a")
 		.attr("class", "game")
-		.style("display", "block")
-		.attr("href", function(d) { return gameReportUrl + "?date=" + d.date + "&team=" + d.homeTeam; })
-		.text(function(d) { return d.gameId + ": " + d.awayTeam + " " + d.awayScore + " at " + d.homeTeam + " " + d.homeScore; });
+		.attr("href", function(d) { return gameReportUrl + "?date=" + d.date + "&team=" + d.homeTeam; });
+		//.text(function(d) { return d.awayTeam + " " + d.awayScore + "at" + d.homeTeam + " " + d.homeScore; });
+	var awayTeams = gameLinks.append("p")
+		.attr("class", "team away")
+		.text(function(d) { return d.awayTeam.replace(".", "") + " " + d.awayScore; });
+	var homeTeam = gameLinks.append("p")
+		.attr("class", "team home")
+		.text(function(d) { return d.homeTeam.replace(".", "")  + " " + d.homeScore; });
 }
 
+</script>
+<script src="pikaday.js"></script>
+<script>
+	var picker = new Pikaday({
+		field: document.getElementById("datepicker"),
+		bound: false,
+		container: document.getElementById("calendar")
+	});
+
+	d3.select("#go").on("click", function() {
+		var teamElement = document.getElementById("team");
+		var team = teamElement.options[teamElement.selectedIndex].value;
+		console.log(team, picker.getDate());
+	});
 </script>
 </body>
 </html>

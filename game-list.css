@@ -1,0 +1,88 @@
+html {
+	width: 100%;
+}
+
+body {
+	color: #222;
+	font-family: sans-serif;
+	font-size: 14px;
+	line-height: 24px;
+	margin: 20px auto 40px auto;
+	padding: 0 10px;
+	max-width: 350px;
+}
+
+h1 {
+	font-size: 25px;
+	font-weight: 400;
+	line-height: 32px;
+	margin-bottom: 24px;
+	margin-left: 100px;
+}
+
+
+.block {
+	display: block;
+}
+
+.date {
+	display: inline-block;
+	width: 90px;
+	text-align: right;
+}
+	.date.other {
+		margin-top: 3px; /* To align label baseline with the text in the dropdown */
+	}
+
+.game-list {
+	box-sizing: border-box;
+	display: inline-block;
+	width: 240px;
+	margin: 0;
+	margin-left: 10px;
+	margin-bottom: 16px;
+	padding: 0;
+}
+
+a.game, .date {
+	vertical-align: top;
+	margin: 0;
+	margin-bottom: 8px;
+	line-height: 24px;
+}
+
+select {
+	width: 240px;
+	border: 1px solid #CCC;
+	height: 32px;
+	font-size: 12px;
+	line-height: 24px;
+	margin: 0;
+	margin-bottom: 16px;
+	padding: 0;
+}
+
+#datepicker {
+	display: none;
+}
+a.game {
+	text-decoration: none;
+	color: #222;
+	background: #fff7cc;
+	display: table;
+}
+	a.game:hover {
+		color: #000;
+		background: #ffef99;
+	}
+
+.team {
+	display: inline-block;
+	margin: 0;
+	padding: 0;
+	text-transform: uppercase;
+	width: auto;
+}
+	.team.away {
+		width: 50px;
+	}
