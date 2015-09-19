@@ -4,14 +4,13 @@
 	<meta charset="utf-8">
 	<title>Game Report</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-	<link href="http://fonts.googleapis.com/css?family=Roboto:400,500,700,900" rel="stylesheet" type="text/css">
 </head>
 <body style="width: 100%; overflow-x: hidden; margin: 0; padding: 0; padding-bottom: 40px;">
-	<h1 style="display: block; text-align: center; font: 20px Roboto; line-height: 24px; margin: 20px auto; color: #777;">Shifts</h1>
+	<h1 style="display: block; text-align: center; font: 20px sans-serif; line-height: 24px; margin: 20px auto; color: #777;">Shifts</h1>
 	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
 		<svg id="shift-chart" style="display: block; position: relative; margin: 0 auto; padding: 0;"></svg>
 	</div>
-	<h1 style="display: block; text-align: center; font: 20px Roboto; line-height: 24px; margin: 48px auto 8px auto; color: #777;">5-on-5 Matchups</h1>
+	<h1 style="display: block; text-align: center; font: 20px sans-serif; line-height: 24px; margin: 48px auto 8px auto; color: #777;">5-on-5 Matchups</h1>
 	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
 		<svg id="matchup-chart" style="display: block; position: relative; margin: 0 auto; padding: 0;"></svg>
 	</div>
@@ -201,7 +200,7 @@ function appendShiftChart() {
 	*/
 
 	var svg = d3.select("body").select("#shift-chart")
-		.style("font-family", "Roboto")
+		.style("font-family", "sans-serif")
 		.style("font-size", "12px");
 
 	// Append a group for each team, and a group for the powerplay and goal indicators
@@ -644,7 +643,7 @@ function appendMatchupChart() {
 
 	var svg = d3.select("#matchup-chart")
 		.style("background", "none")
-		.style("font-family", "Roboto")
+		.style("font-family", "sans-serif")
 		.style("font-size", "12px");
 
 	svg.append("g")
