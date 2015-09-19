@@ -13,8 +13,9 @@
 		<div id="games">
 		</div>
 		<div class="block">
-		<div class="date other">Another game</div>
-			<div class="game-list">
+			<div class="date other"> </div
+			><div class="game-list picker">
+				<span>Game played by</span>
 				<select id="team">
 					<option value="ana">ANA</option>
 					<option value="ari">ARI</option>
@@ -46,11 +47,11 @@
 					<option value="van">VAN</option>
 					<option value="wpg">WPG</option>
 					<option value="wsh">WSH</option>
-				</select>
+				</select><span>on</span>
 				<div id="calendar">
 					<input type="text" id="datepicker">
 				</div>
-				<a href="#" id="go">Go</a>
+				<a id="go">Go</a>
 			</div>
 		</div>
 	</div>
@@ -132,12 +133,20 @@ function updateGameList() {
 		.attr("class", "game")
 		.attr("href", function(d) { return gameReportUrl + "?date=" + d.date + "&team=" + d.homeTeam; });
 		//.text(function(d) { return d.awayTeam + " " + d.awayScore + "at" + d.homeTeam + " " + d.homeScore; });
-	var awayTeams = gameLinks.append("p")
+	var awayTeams = gameLinks.append("span")
 		.attr("class", "team away")
-		.text(function(d) { return d.awayTeam.replace(".", "") + " " + d.awayScore; });
-	var homeTeam = gameLinks.append("p")
+		.html(function(d) {
+			var teamStr = d.awayTeam.replace(".", "");
+			if (teamStr.length < 3) { teamStr += "&nbsp;"; }
+			return teamStr + " " + d.awayScore;
+		});
+	var homeTeam = gameLinks.append("span")
 		.attr("class", "team home")
-		.text(function(d) { return d.homeTeam.replace(".", "")  + " " + d.homeScore; });
+		.html(function(d) {
+			var teamStr = d.homeTeam.replace(".", "");
+			if (teamStr.length < 3) { teamStr += "&nbsp;"; }
+			return teamStr + " " + d.homeScore;
+		});
 }
 
 </script>

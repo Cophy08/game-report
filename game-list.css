@@ -9,14 +9,14 @@ body {
 	line-height: 24px;
 	margin: 20px auto 40px auto;
 	padding: 0 10px;
-	max-width: 350px;
+	max-width: 440px;
 }
 
 h1 {
 	font-size: 25px;
 	font-weight: 400;
 	line-height: 32px;
-	margin-bottom: 24px;
+	margin-bottom: 40px;
 	margin-left: 100px;
 }
 
@@ -37,7 +37,7 @@ h1 {
 .game-list {
 	box-sizing: border-box;
 	display: inline-block;
-	width: 240px;
+	width: 340px;
 	margin: 0;
 	margin-left: 10px;
 	margin-bottom: 16px;
@@ -45,44 +45,86 @@ h1 {
 }
 
 a.game, .date {
+	font-family: Courier, "Courier New", monospace;
 	vertical-align: top;
 	margin: 0;
 	margin-bottom: 8px;
 	line-height: 24px;
 }
 
-select {
-	width: 240px;
-	border: 1px solid #CCC;
+
+#team {
+	background: none;
+	border: none;
+	width: 58px;
+	border-bottom: 2px solid #ddf;
+	color: blue;
+	border-radius: 0;
 	height: 32px;
-	font-size: 12px;
-	line-height: 24px;
+	font-size: 14px;
 	margin: 0;
-	margin-bottom: 16px;
-	padding: 0;
+	margin-right: 10px;
+	display: inline-block;
+	padding-left: 5px;
+	-webkit-appearance: none;
+    -moz-appearance: none;
+
+    /* Draw dropdown arrow */
+    background-position: right 50%;
+    background-repeat: no-repeat;
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAMCAYAAABSgIzaAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NDZFNDEwNjlGNzFEMTFFMkJEQ0VDRTM1N0RCMzMyMkIiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NDZFNDEwNkFGNzFEMTFFMkJEQ0VDRTM1N0RCMzMyMkIiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo0NkU0MTA2N0Y3MUQxMUUyQkRDRUNFMzU3REIzMzIyQiIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo0NkU0MTA2OEY3MUQxMUUyQkRDRUNFMzU3REIzMzIyQiIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PuGsgwQAAAA5SURBVHjaYvz//z8DOYCJgUxAf42MQIzTk0D/M+KzkRGPoQSdykiKJrBGpOhgJFYTWNEIiEeAAAMAzNENEOH+do8AAAAASUVORK5CYII=);
 }
 
+	#team:hover, #team:active {
+		border-bottom: 2px solid blue;
+	}
+
+.game-list.picker {
+	margin-top: 32px;
+}
+
+#calendar {
+	margin-top: 12px;
+}
 #datepicker {
 	display: none;
 }
+
 a.game {
-	text-decoration: none;
-	color: #222;
-	background: #fff7cc;
+	border-bottom: 2px solid #ddf;
+	color: blue;
 	display: table;
+	text-decoration: none;
+	margin-bottom: 8px;
 }
+
 	a.game:hover {
-		color: #000;
-		background: #ffef99;
+		border-bottom: 2px solid blue;
 	}
 
 .team {
 	display: inline-block;
-	margin: 0;
-	padding: 0;
 	text-transform: uppercase;
-	width: auto;
 }
 	.team.away {
-		width: 50px;
+		min-width: 50px;
+		margin-right: 10px;
+	}
+
+#go {
+	display: inline-block;
+	background: #ffef99;
+	border-radius: 2px;
+	border: 1px solid gold;
+	box-sizing: border-box;
+	color: #222;
+	cursor: pointer;
+	text-decoration: none;
+	line-height: 32px;
+	text-align: center;
+	margin-top: 16px;
+	width: 80px;
+}
+	#go:hover {
+		background: gold;
 	}
