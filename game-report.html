@@ -4,15 +4,17 @@
 	<meta charset="utf-8">
 	<title>Game Report</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="game-report.css">
 </head>
-<body style="width: 100%; overflow-x: hidden; margin: 0; padding: 0; padding-bottom: 40px;">
-	<h1 style="display: block; text-align: center; font: 20px sans-serif; line-height: 24px; margin: 20px auto; color: #777;">Shifts</h1>
-	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
-		<svg id="shift-chart" style="display: block; position: relative; margin: 0 auto; padding: 0;"></svg>
+<body>
+	<h1>Game report: AWY 4 at HME 2, May 22 2014</h1>
+	<h2>Shifts</h2>
+	<div id="matchups-div" class="chart">
+		<svg id="shift-chart"></svg>
 	</div>
-	<h1 style="display: block; text-align: center; font: 20px sans-serif; line-height: 24px; margin: 48px auto 8px auto; color: #777;">5-on-5 Matchups</h1>
-	<div id="matchups-div" style="display: block; position: relative; height: auto; overflow-y: hidden; overflow-x: auto; margin: 0; width: 100%;">
-		<svg id="matchup-chart" style="display: block; position: relative; margin: 0 auto; padding: 0;"></svg>
+	<h2>5-on-5 matchups</h2>
+	<div id="matchups-div" class="chart">
+		<svg id="matchup-chart"></svg>
 	</div>
 </body>
 <script>
@@ -27,8 +29,8 @@ var periodData = [];
 
 var teams = [];
 var blueTeam = "";
-var red = "#ee0000";
-var blue = "#0000ee";
+var red = "red";
+var blue = "blue";
 
 // Parse parameters in the url and select the specified team and game
 // Season and gameId must be stored as strings
@@ -257,6 +259,9 @@ function appendShiftChart() {
 	svg.style("background", "none")
 		.style("height", svgHeight + "px")
 		.style("width", svgWidth + "px");
+
+	// Size the container div
+	d3.select("body").style("max-width", svgWidth + "px");
 
 	// Position names
 	svg.selectAll("g.names").selectAll("text.name")
