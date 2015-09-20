@@ -1,18 +1,22 @@
 html {
 	width: 100%;
+	overflow: auto;
+	text-align: center;
 }
 
 body {
+	display: inline-block;
 	color: #222;
 	font-family: sans-serif;
 	font-size: 14px;
 	line-height: 24px;
 	padding: 0 10px;
-	width: 100%; /* Width will be set by d3.js once it knows the shift chart's width */
+	width: 100%;
 	margin: 20px auto 80px auto;
 }
 
 h1 {
+	display: table;
 	font-size: 25px;
 	font-weight: 400;
 	line-height: 32px;
@@ -20,6 +24,7 @@ h1 {
 }
 
 h2 {
+	display: table;
 	font-size: 20px;
 	font-weight: 400;
 	line-height: 32px;
@@ -27,7 +32,6 @@ h2 {
 }
 
 div.chart {
-	overflow-y: hidden;
-	overflow-x: auto;
 	margin-bottom: 40px;
+	text-align: left;
 }

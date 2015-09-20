@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" style="width: 100%; overflow-x: hidden;">
+<html lang="en">
 <head>
 	<meta charset="utf-8">
 	<title>Game Report</title>
@@ -7,14 +7,16 @@
 	<link rel="stylesheet" type="text/css" href="game-report.css">
 </head>
 <body>
-	<h1>Game report: AWY 4 at HME 2, May 22 2014</h1>
-	<h2>Shifts</h2>
-	<div id="matchups-div" class="chart">
-		<svg id="shift-chart"></svg>
-	</div>
-	<h2>5-on-5 matchups</h2>
-	<div id="matchups-div" class="chart">
-		<svg id="matchup-chart"></svg>
+	<div class="container">
+		<h1>AWY # at HME #, mmm dd yyyy</h1>
+		<h2>Shifts</h2>
+		<div id="matchups-div" class="chart">
+			<svg id="shift-chart"></svg>
+		</div>
+		<h2>5-on-5 matchups</h2>
+		<div id="matchups-div" class="chart">
+			<svg id="matchup-chart"></svg>
+		</div>
 	</div>
 </body>
 <script>
@@ -261,7 +263,7 @@ function appendShiftChart() {
 		.style("width", svgWidth + "px");
 
 	// Size the container div
-	d3.select("body").style("max-width", svgWidth + "px");
+	d3.select("body").style("width", svgWidth + "px");
 
 	// Position names
 	svg.selectAll("g.names").selectAll("text.name")
