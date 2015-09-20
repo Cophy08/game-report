@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<title>Game Report</title>
+	<title>Game report</title>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 	<link rel="stylesheet" type="text/css" href="game-report.css">
 </head>
 <body>
 	<div class="container">
-		<h1>AWY # at HME #, mmm dd yyyy</h1>
+		<h1>Game report</h1>
 		<h2>Shifts</h2>
 		<div id="matchups-div" class="chart">
 			<svg id="shift-chart"></svg>
@@ -47,7 +47,7 @@ for (var i = 0; i < urlParameters.length; i++) {
 //var flaskUrl = "http://127.0.0.1:5000/databot/get-game-data/?";
 var flaskUrl = "http://datarink.com/databot/get-game-data/?";
 var jsonUrl = flaskUrl + "team=" + team + "&date=" + date;
-console.log(jsonUrl);
+//console.log(jsonUrl);
 
 d3.json(jsonUrl, function(error, json) {
 
@@ -146,7 +146,7 @@ d3.json(jsonUrl, function(error, json) {
 		// The away team's players are displayed in ascending TOI; descending TOI for the home team
 		var adjAOrder = a.order;
 		var adjBOrder = b.order;
-		if (a.team === b.team && a.team !== teams[1]) {
+		if (a.team === b.team && a.team !== teams[0]) {
 			adjAOrder = 90 - a.order;
 			adjBOrder = 90 - b.order;
 		}
@@ -162,6 +162,23 @@ d3.json(jsonUrl, function(error, json) {
 
 	appendShiftChart();
 	appendMatchupChart();
+
+	// Page title
+	var goalCounts = [0, 0];
+	eventData.filter(function(d) { return d.eventType === "goal"; }).forEach(function(g) {
+		goalCounts[teams.indexOf(g.eventTeam)] += 1;
+	});
+
+
+	var year = +date.substring(date.lastIndexOf("-") + 1);
+	var month = +date.substring(date.indexOf("-") + 1, date.lastIndexOf("-"));
+	month--;
+	var day = +date.substring(0, date.indexOf("-"));
+
+	var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+	d3.select("h1").html("<span style='color: red;'>" + teams[1].toUpperCase() + " " + goalCounts[1] + "</span> at <span style='color: blue;'>" + teams[0].toUpperCase() + " " + goalCounts[0] + "</span>: " + monthNames[month] + " " + day + ", " + year);
+
 });
 
 function appendShiftChart() {
@@ -214,7 +231,7 @@ function appendShiftChart() {
 			.attr("class", "team")
 			.attr("id", function(d, i) { return "team" + i; })
 			.attr("transform", function(d, i) {
-				return "translate(0," + (i * (shiftData[i].length * rowHeight + vGap)) + ")";
+				return "translate(0," + ((1-i) * (shiftData[i].length * rowHeight + vGap)) + ")";
 			});
 	svg.append("g")
 		.attr("class", "powerplay")
