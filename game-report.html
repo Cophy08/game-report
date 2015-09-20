@@ -834,26 +834,32 @@ function appendMatchupChart() {
 		.text("→ Run: matchup duration");
 	legend.append("text")
 		.attr("y", namesHeight + namesBottomPadding + y.range()[2])
-		.text("↑ Rise: matchup's corsi differential");
+		.text("  between " + xLen.domain()[0] + " and " + Math.round(xLen.domain()[1] / 60) + " min");
 	legend.append("text")
 		.attr("y", namesHeight + namesBottomPadding + y.range()[3])
-		.text("  Line colour: player with positive");
+		.text("↑ Rise: matchup's corsi differential");
 	legend.append("text")
 		.attr("y", namesHeight + namesBottomPadding + y.range()[4])
-		.text("               corsi differential");
+		.text("  between " + l.domain()[0] + " and " + l.domain()[1] + " corsis");
 	legend.append("text")
 		.attr("y", namesHeight + namesBottomPadding + y.range()[5])
+		.text("/ Line colour: player with positive");
+	legend.append("text")
+		.attr("y", namesHeight + namesBottomPadding + y.range()[6])
+		.text("  corsi differential");
+	legend.append("text")
+		.attr("y", namesHeight + namesBottomPadding + y.range()[7])
 		.text("○ Circle colour: player with positive");
 legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[6])
-		.text("                 goal differential");
+		.attr("y", namesHeight + namesBottomPadding + y.range()[8])
+		.text("  goal differential");
 
 	legend.selectAll("text")
 		.attr("x", 0)
 		.attr("xml:space", "preserve")
 		.style("font-family", "Courier, monospace")
 		.style("dominant-baseline", "middle")
-		.style("fill", "#222");
+		.style("fill", "#777");
 }
 
 function groupPlayers(team) {
