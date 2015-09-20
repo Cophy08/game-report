@@ -51,134 +51,135 @@ var jsonUrl = flaskUrl + "team=" + team + "&date=" + date;
 
 d3.json(jsonUrl, function(error, json) {
 
-	periodData = json.filter(function(d) { return d.type === "period"; });
-	playerData = json.filter(function(d) { return d.type === "player"; });
-	eventData = json.filter(function(d) { return d.type === "event"; });
-	shiftData = json.filter(function(d) { return d.type === "shift"; });
-	opponentPairingData = json.filter(function(d) { return d.type === "opponents"; });
-	teammatePairingData = json.filter(function(d) { return d.type === "teammates"; });
-	powerplayData = json.filter(function(d) { return d.type === "powerplay"; });
+	var year = +date.substring(date.lastIndexOf("-") + 1);
+	var month = +date.substring(date.indexOf("-") + 1, date.lastIndexOf("-")) - 1;
+	var day = +date.substring(0, date.indexOf("-"));
+	var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+	var titleDateString = monthNames[month] + " " + day + ", " + year;
 
-	// Get team names: [away, home]
-	teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
-	teams[1] = json.filter(function(d) { return d.type === "teams"; })[0].home;
-	blueTeam = teams[0];
+	if (error || json.length <= 0) {
+		d3.select("h2").text("Couldn't get data for the game played by " + team.replace(".", "").toUpperCase() + " on " + titleDateString);
+	} else {
 
-	// Split up pairing keys in the pairing datasets
-	teammatePairingData.forEach(function(pair) {
-		pair.p1 = +pair.playerIds.substring(0, pair.playerIds.indexOf("&"));
-		pair.p2 = +pair.playerIds.substring(pair.playerIds.indexOf("&") + 1);
-	});
-	opponentPairingData.forEach(function(pair) {
-		pair.p1 = +pair.playerIds.substring(0, pair.playerIds.indexOf("&"));
-		pair.p2 = +pair.playerIds.substring(pair.playerIds.indexOf("&") + 1);
-	});
+		periodData = json.filter(function(d) { return d.type === "period"; });
+		playerData = json.filter(function(d) { return d.type === "player"; });
+		eventData = json.filter(function(d) { return d.type === "event"; });
+		shiftData = json.filter(function(d) { return d.type === "shift"; });
+		opponentPairingData = json.filter(function(d) { return d.type === "opponents"; });
+		teammatePairingData = json.filter(function(d) { return d.type === "teammates"; });
+		powerplayData = json.filter(function(d) { return d.type === "powerplay"; });
 
-	// Nest shift data and append player metadata
-	shiftData = d3.nest()
-		.key(function(d) { return d.playerId; })
-		.entries(shiftData);
-	shiftData.forEach(function(d) {
-		d.key = +d.key;
+		// Get team names: [away, home]
+		teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
+		teams[1] = json.filter(function(d) { return d.type === "teams"; })[0].home;
+		blueTeam = teams[0];
 
-		var playerProperties = playerData.filter(function(p) { return p.type === "player" && p.playerId === d.key; })[0];
-		d.playerId = playerProperties.playerId;
-		d.name = playerProperties.name;
-		d.number = playerProperties.number;
-		d.position = playerProperties.position;
-		d.team = playerProperties.team;
-		d.toi = playerProperties.toi;
-	});
-
-	// Record separate lists for forwards and defense on ice for each event - this will be used to draw the event lines
-	eventData.forEach(function(d) {
-		var skatersOnIce = [d.awaySkaters, d.homeSkaters];
-		var defensemen = [[], []];
-		var forwards = [[], []];
-
-		skatersOnIce.forEach(function(teamSkaters, i) {
-			teamSkaters.filter(function(d) { return d > 0; }).forEach(function(s) {
-				var thisPlayerData = playerData.filter(function(d) { return d.playerId === s; })[0];
-				if (["l", "r", "c"].indexOf(thisPlayerData.position) >= 0) {
-					defensemen[i].push(s);
-				}else if (thisPlayerData.position === "d") {
-					forwards[i].push(s);
-				}
-			});
+		// Split up pairing keys in the pairing datasets
+		teammatePairingData.forEach(function(pair) {
+			pair.p1 = +pair.playerIds.substring(0, pair.playerIds.indexOf("&"));
+			pair.p2 = +pair.playerIds.substring(pair.playerIds.indexOf("&") + 1);
+		});
+		opponentPairingData.forEach(function(pair) {
+			pair.p1 = +pair.playerIds.substring(0, pair.playerIds.indexOf("&"));
+			pair.p2 = +pair.playerIds.substring(pair.playerIds.indexOf("&") + 1);
 		});
 
-		d.awayDefensemen = defensemen[0];
-		d.homeDefensemen = defensemen[1];
-		d.awayForwards = forwards[0];
-		d.homeForwards = forwards[1];
-	});
+		// Nest shift data and append player metadata
+		shiftData = d3.nest()
+			.key(function(d) { return d.playerId; })
+			.entries(shiftData);
+		shiftData.forEach(function(d) {
+			d.key = +d.key;
 
-	// Remove all pairings involving goalies
-	var goaliePlayerIds = playerData.filter(function(d) { return d.position === "g"; })
-		.map(function(d) { return d.playerId; });
-	teammatePairingData = teammatePairingData.filter(function(d) { return goaliePlayerIds.indexOf(d.p1) < 0 && goaliePlayerIds.indexOf(d.p2) < 0; });
-	opponentPairingData = opponentPairingData.filter(function(d) { return goaliePlayerIds.indexOf(d.playerIds[0]) < 0 && goaliePlayerIds.indexOf(d.playerIds[1]) < 0; });
+			var playerProperties = playerData.filter(function(p) { return p.type === "player" && p.playerId === d.key; })[0];
+			d.playerId = playerProperties.playerId;
+			d.name = playerProperties.name;
+			d.number = playerProperties.number;
+			d.position = playerProperties.position;
+			d.team = playerProperties.team;
+			d.toi = playerProperties.toi;
+		});
 
-	// Remove goalie data
-	playerData = playerData.filter(function(d) { return d.position !== "g"; });
-	shiftData = shiftData.filter(function(d) { return d.position !== "g"; });
+		// Record separate lists for forwards and defense on ice for each event - this will be used to draw the event lines
+		eventData.forEach(function(d) {
+			var skatersOnIce = [d.awaySkaters, d.homeSkaters];
+			var defensemen = [[], []];
+			var forwards = [[], []];
 
-	// Group players and set the player display order
-	teams.forEach(function(t) {
-		groupPlayers(t);
-	});
+			skatersOnIce.forEach(function(teamSkaters, i) {
+				teamSkaters.filter(function(d) { return d > 0; }).forEach(function(s) {
+					var thisPlayerData = playerData.filter(function(d) { return d.playerId === s; })[0];
+					if (["l", "r", "c"].indexOf(thisPlayerData.position) >= 0) {
+						defensemen[i].push(s);
+					}else if (thisPlayerData.position === "d") {
+						forwards[i].push(s);
+					}
+				});
+			});
 
-	shiftData = shiftData.sort(function(a, b) {
-		var aScore = 0;
-		var bScore = 0;
+			d.awayDefensemen = defensemen[0];
+			d.homeDefensemen = defensemen[1];
+			d.awayForwards = forwards[0];
+			d.homeForwards = forwards[1];
+		});
 
-		// The home team is displayed after the away team
-		if (a.team === teams[1]) aScore += 1000;
-		if (b.team === teams[1]) bScore += 1000;
+		// Remove all pairings involving goalies
+		var goaliePlayerIds = playerData.filter(function(d) { return d.position === "g"; })
+			.map(function(d) { return d.playerId; });
+		teammatePairingData = teammatePairingData.filter(function(d) { return goaliePlayerIds.indexOf(d.p1) < 0 && goaliePlayerIds.indexOf(d.p2) < 0; });
+		opponentPairingData = opponentPairingData.filter(function(d) { return goaliePlayerIds.indexOf(d.playerIds[0]) < 0 && goaliePlayerIds.indexOf(d.playerIds[1]) < 0; });
 
-		// The home team's defensemen are displayed last; the away team's defensemen are displayed first
-		if (a.team === teams[1] && a.position === "d") aScore += 500;
-		else if (a.team !== teams[1] && a.position !== "d") aScore += 100;
-		if (b.team === teams[1] && b.position === "d") bScore += 500;
-		else if (b.team !== teams[1] && b.position !== "d") bScore += 100;
+		// Remove goalie data
+		playerData = playerData.filter(function(d) { return d.position !== "g"; });
+		shiftData = shiftData.filter(function(d) { return d.position !== "g"; });
 
-		// Adjust the order returned from the groupPlayers function
-		// The away team's players are displayed in ascending TOI; descending TOI for the home team
-		var adjAOrder = a.order;
-		var adjBOrder = b.order;
-		if (a.team === b.team && a.team !== teams[0]) {
-			adjAOrder = 90 - a.order;
-			adjBOrder = 90 - b.order;
-		}
-		aScore += adjAOrder;
-		bScore += adjBOrder;
+		// Group players and set the player display order
+		teams.forEach(function(t) {
+			groupPlayers(t);
+		});
 
-		return aScore - bScore;
-	});
+		shiftData = shiftData.sort(function(a, b) {
+			var aScore = 0;
+			var bScore = 0;
 
-	// Turn shift data into an array: [away shift data, home shift data]
-	shiftData = [shiftData.filter(function(d) { return d.team === teams[0]; }),
-		shiftData.filter(function(d) { return d.team === teams[1]; })];
+			// The home team is displayed after the away team
+			if (a.team === teams[1]) aScore += 1000;
+			if (b.team === teams[1]) bScore += 1000;
 
-	appendShiftChart();
-	appendMatchupChart();
+			// The home team's defensemen are displayed last; the away team's defensemen are displayed first
+			if (a.team === teams[1] && a.position === "d") aScore += 500;
+			else if (a.team !== teams[1] && a.position !== "d") aScore += 100;
+			if (b.team === teams[1] && b.position === "d") bScore += 500;
+			else if (b.team !== teams[1] && b.position !== "d") bScore += 100;
 
-	// Page title
-	var goalCounts = [0, 0];
-	eventData.filter(function(d) { return d.eventType === "goal"; }).forEach(function(g) {
-		goalCounts[teams.indexOf(g.eventTeam)] += 1;
-	});
+			// Adjust the order returned from the groupPlayers function
+			// The away team's players are displayed in ascending TOI; descending TOI for the home team
+			var adjAOrder = a.order;
+			var adjBOrder = b.order;
+			if (a.team === b.team && a.team !== teams[1]) {
+				adjAOrder = 90 - a.order;
+				adjBOrder = 90 - b.order;
+			}
+			aScore += adjAOrder;
+			bScore += adjBOrder;
 
+			return aScore - bScore;
+		});
 
-	var year = +date.substring(date.lastIndexOf("-") + 1);
-	var month = +date.substring(date.indexOf("-") + 1, date.lastIndexOf("-"));
-	month--;
-	var day = +date.substring(0, date.indexOf("-"));
+		// Turn shift data into an array: [away shift data, home shift data]
+		shiftData = [shiftData.filter(function(d) { return d.team === teams[0]; }),
+			shiftData.filter(function(d) { return d.team === teams[1]; })];
 
-	var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+		appendShiftChart();
+		appendMatchupChart();
 
-	d3.select("h1").html("<span style='color: red;'>" + teams[1].toUpperCase() + " " + goalCounts[1] + "</span> at <span style='color: blue;'>" + teams[0].toUpperCase() + " " + goalCounts[0] + "</span>: " + monthNames[month] + " " + day + ", " + year);
-
+		// Page title
+		var goalCounts = [0, 0];
+		eventData.filter(function(d) { return d.eventType === "goal"; }).forEach(function(g) {
+			goalCounts[teams.indexOf(g.eventTeam)] += 1;
+		});
+		d3.select("h1").html("<span style='color: blue;'>" + teams[0].toUpperCase() + " " + goalCounts[0] + "</span> at <span style='color: red;'>" + teams[1].toUpperCase() + " " + goalCounts[1] + "</span> on " + titleDateString);
+	}
 });
 
 function appendShiftChart() {
@@ -231,7 +232,7 @@ function appendShiftChart() {
 			.attr("class", "team")
 			.attr("id", function(d, i) { return "team" + i; })
 			.attr("transform", function(d, i) {
-				return "translate(0," + ((1-i) * (shiftData[i].length * rowHeight + vGap)) + ")";
+				return "translate(0," + (i * (shiftData[i].length * rowHeight + vGap)) + ")";
 			});
 	svg.append("g")
 		.attr("class", "powerplay")
@@ -636,6 +637,7 @@ function appendMatchupChart() {
 		}
 	});
 
+	// Away team is listed on the x-axis; home team is on the y-axis
 	var x = d3.scale.ordinal()
 		.domain(xOrder.map(function(d) { return d.playerId; }))
 		.rangePoints([0, shiftData[0].length * cellWidth], 1);
@@ -809,8 +811,8 @@ function appendMatchupChart() {
 	*
 	*/
 
-	var legendWidth = 400;
-	var legendLeftPadding = 40;
+	var legendWidth = 270;
+	var legendLeftPadding = 60;
 	svg.attr("height", shiftData[1].length * cellHeight + namesHeight + namesBottomPadding)
 		.attr("width", shiftData[0].length * cellWidth + namesWidth + namesRightPadding + svgRightPadding + legendLeftPadding + legendWidth);
 
@@ -851,7 +853,7 @@ function appendMatchupChart() {
 		.text("→ Run: matchup duration");
 	legend.append("text")
 		.attr("y", namesHeight + namesBottomPadding + y.range()[2])
-		.text("  between " + xLen.domain()[0] + " and " + Math.round(xLen.domain()[1] / 60) + " min");
+		.text("  between " + xLen.domain()[0] + " and " + Math.round(xLen.domain()[1] / 60) + " minutes");
 	legend.append("text")
 		.attr("y", namesHeight + namesBottomPadding + y.range()[3])
 		.text("↑ Rise: matchup's corsi differential");
