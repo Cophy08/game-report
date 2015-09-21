@@ -188,10 +188,10 @@ d3.json(jsonUrl, function(error, json) {
 			var outStr = "<span style='color:";
 			if (blueTeam === teams[0]) { outStr += "blue"; }
 			else { outStr += "red"; }
-			outStr += ";'>" + teams[0].toUpperCase() + " " + goalCounts[0] + "</span> at <span style = 'color:";
+			outStr += ";'>" + teams[0].replace(".", "").toUpperCase() + " " + goalCounts[0] + "</span> at <span style = 'color:";
 			if (blueTeam === teams[1]) { outStr += "blue"; }
 			else { outStr += "red"; }
-			outStr += ";'>" + teams[1].toUpperCase() + " " + goalCounts[1] + "</span> on " + titleDateString;
+			outStr += ";'>" + teams[1].replace(".", "").toUpperCase() + " " + goalCounts[1] + "</span> on " + titleDateString;
 			return outStr;
 		});
 	}
