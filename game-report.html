@@ -7,16 +7,15 @@
 	<link rel="stylesheet" type="text/css" href="game-report.css">
 </head>
 <body>
-	<div class="container">
-		<h1>Game report</h1>
-		<h2>Shifts</h2>
-		<div id="matchups-div" class="chart">
-			<svg id="shift-chart"></svg>
-		</div>
-		<h2>5-on-5 matchups</h2>
-		<div id="matchups-div" class="chart">
-			<svg id="matchup-chart"></svg>
-		</div>
+	<p class="message">Getting data for game report...</p>
+	<h1>Game report</h1>
+	<h2>Shifts</h2>
+	<div id="matchups-div" class="chart">
+		<svg id="shift-chart"></svg>
+	</div>
+	<h2>5-on-5 matchups</h2>
+	<div id="matchups-div" class="chart">
+		<svg id="matchup-chart"></svg>
 	</div>
 </body>
 <script>
@@ -49,6 +48,8 @@ var flaskUrl = "http://datarink.com/databot/get-game-data/?";
 var jsonUrl = flaskUrl + "team=" + team + "&date=" + date;
 //console.log(jsonUrl);
 
+d3.selectAll("h1, h2, div.chart").style("display", "none");
+
 d3.json(jsonUrl, function(error, json) {
 
 	var year = +date.substring(date.lastIndexOf("-") + 1);
@@ -58,8 +59,11 @@ d3.json(jsonUrl, function(error, json) {
 	var titleDateString = monthNames[month] + " " + day + ", " + year;
 
 	if (error || json.length <= 0) {
-		d3.select("h2").text("Couldn't get data for the game played by " + team.replace(".", "").toUpperCase() + " on " + titleDateString);
+		d3.select("body").select("p.message")
+			.text("Couldn't get data for the game played by " + team.replace(".", "").toUpperCase() + " on " + titleDateString);
 	} else {
+		d3.selectAll("p.message").style("display", "none");
+		d3.selectAll("h1, h2, div.chart").style("display", "");
 
 		periodData = json.filter(function(d) { return d.type === "period"; });
 		playerData = json.filter(function(d) { return d.type === "player"; });
@@ -72,7 +76,7 @@ d3.json(jsonUrl, function(error, json) {
 		// Get team names: [away, home]
 		teams[0] = json.filter(function(d) { return d.type === "teams"; })[0].away;
 		teams[1] = json.filter(function(d) { return d.type === "teams"; })[0].home;
-		blueTeam = teams[0];
+		setTeamColours();
 
 		// Split up pairing keys in the pairing datasets
 		teammatePairingData.forEach(function(pair) {
@@ -179,6 +183,17 @@ d3.json(jsonUrl, function(error, json) {
 			goalCounts[teams.indexOf(g.eventTeam)] += 1;
 		});
 		d3.select("h1").html("<span style='color: blue;'>" + teams[0].toUpperCase() + " " + goalCounts[0] + "</span> at <span style='color: red;'>" + teams[1].toUpperCase() + " " + goalCounts[1] + "</span> on " + titleDateString);
+
+		d3.select("h1").html(function() {
+			var outStr = "<span style='color:";
+			if (blueTeam === teams[0]) { outStr += "blue"; }
+			else { outStr += "red"; }
+			outStr += ";'>" + teams[0].toUpperCase() + " " + goalCounts[0] + "</span> at <span style = 'color:";
+			if (blueTeam === teams[1]) { outStr += "blue"; }
+			else { outStr += "red"; }
+			outStr += ";'>" + teams[1].toUpperCase() + " " + goalCounts[1] + "</span> on " + titleDateString;
+			return outStr;
+		});
 	}
 });
 
@@ -560,7 +575,7 @@ function appendShiftChart() {
 function appendMatchupChart() {
 
 	var cellHeight = 24;
-	var cellWidth = 36;
+	var cellWidth = 34;
 	var namesHeight = 120;
 	var namesBottomPadding = 10;
 	var namesWidth = 120;
@@ -811,15 +826,16 @@ function appendMatchupChart() {
 	*
 	*/
 
-	var legendWidth = 270;
-	var legendLeftPadding = 60;
-	svg.attr("height", shiftData[1].length * cellHeight + namesHeight + namesBottomPadding)
-		.attr("width", shiftData[0].length * cellWidth + namesWidth + namesRightPadding + svgRightPadding + legendLeftPadding + legendWidth);
-
+	var legendWidth = 340;
+	var legendLeftPadding = cellWidth;
 	var legend = svg.append("g")
 		.attr("class", "legend")
 		.attr("transform", "translate(" + (shiftData[0].length * cellWidth + namesWidth + namesRightPadding + svgRightPadding + legendLeftPadding) + ",0)");
 
+	svg.attr("height", shiftData[1].length * cellHeight + namesHeight + namesBottomPadding)
+		.attr("width", shiftData[0].length * cellWidth + namesWidth + namesRightPadding + svgRightPadding + legendLeftPadding + legendWidth);
+
+	// Append example dash
 	legend.append("circle")
 		.attr("cx", xLen.range()[0])
 		.attr("cy", namesHeight + namesBottomPadding + y.range()[0])
@@ -827,20 +843,6 @@ function appendMatchupChart() {
 		.style("fill", "none")
 		.style("stroke", red)
 		.style("stroke-opacity", 0.8);
-	// legend.append("line")
-	// 	.attr("x1", xLen.range()[1])
-	// 	.attr("x2", xLen.range()[1])
-	// 	.attr("y1", namesHeight + namesBottomPadding + y.range()[0])
-	// 	.attr("y2", namesHeight + namesBottomPadding + y.range()[0] - l.range()[1])
-	// 	.style("stroke", "gold")
-	// 	.style("stroke-opacity", 1);
-	// legend.append("line")
-	// 	.attr("x1", 0)
-	// 	.attr("x2", xLen.range()[1])
-	// 	.attr("y1", namesHeight + namesBottomPadding + y.range()[0])
-	// 	.attr("y2", namesHeight + namesBottomPadding + y.range()[0])
-	// 	.style("stroke", "gold")
-	// 	.style("stroke-opacity", 1);
 	legend.append("line")
 		.attr("x1", 0)
 		.attr("x2", xLen.range()[1])
@@ -848,92 +850,31 @@ function appendMatchupChart() {
 		.attr("y2", namesHeight + namesBottomPadding + y.range()[0] - l.range()[1])
 		.attr("stroke", "red");
 
-	legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[1])
-		.text("→ Run: matchup duration");
-	legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[2])
-		.text("  between " + xLen.domain()[0] + " and " + Math.round(xLen.domain()[1] / 60) + " minutes");
-	legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[3])
-		.text("↑ Rise: matchup's corsi differential");
-	legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[4])
-		.text("  between " + l.domain()[0] + " and " + l.domain()[1] + " corsis");
-	legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[5])
-		.text("/ Line colour: player with positive");
-	legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[6])
-		.text("  corsi differential");
-	legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[7])
-		.text("○ Circle colour: player with positive");
-	legend.append("text")
-		.attr("y", namesHeight + namesBottomPadding + y.range()[8])
-		.text("  goal differential");
-	legend.selectAll("text")
-		.attr("x", 0)
-		.attr("xml:space", "preserve")
-		.style("font-family", "Courier, monospace")
-		.style("dominant-baseline", "middle")
-		.style("fill", "#777");
+	// Append legend text
+	var keys = ["→", "↑", "/", "○"];
+	var descs = [];
+	descs[0] = "Run: matchup duration, between " + xLen.domain()[0] + " and " + Math.round(xLen.domain()[1] / 60) + " min";
+	descs[1] = "Rise: matchup corsi differential, between " + l.domain()[0] + " and " + l.domain()[1] + " corsis";
+	descs[2] = "Line colour: player with positive corsi differential";
+	descs[3] = "Circle colour: player with positive goal differential";
+	legend.selectAll("text.key")
+		.data(keys)
+		.enter().append("text")
+			.attr("class", "key")
+			.attr("x", 0)
+			.attr("y", function(d, i) { return namesHeight + namesBottomPadding + y.range()[i + 1]; })
+			.style("text-anchor", "middle")
+			.style("fill", "#777")
+			.text(function(d) { return d; });
+	legend.selectAll("text.desc")
+		.data(descs)
+		.enter().append("text")
+			.attr("class", "desc")
+			.attr("x", 15)
+			.attr("y", function(d, i) { return namesHeight + namesBottomPadding + y.range()[i + 1]; })
+			.style("fill", "#777")
+			.text(function(d) { return d; });
 
-	// legend.append("text")
-	// 	.attr("class", "key")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[1])
-	// 	.text("→");
-	// legend.append("text")
-	// 	.attr("class", "desc")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[1])
-	// 	.text("Run: matchup duration");
-	// legend.append("text")
-	// 	.attr("class", "desc")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[2])
-	// 	.text("between " + xLen.domain()[0] + " and " + Math.round(xLen.domain()[1] / 60) + " min");
-	// legend.append("text")
-	// 	.attr("class", "key")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[3])
-	// 	.text("↑");
-	// legend.append("text")
-	// 	.attr("class", "desc")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[3])
-	// 	.text("Rise: matchup's corsi differential");
-	// legend.append("text")
-	// 	.attr("class", "desc")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[4])
-	// 	.text("between " + l.domain()[0] + " and " + l.domain()[1] + " corsis");
-	// legend.append("text")
-	// 	.attr("class", "key")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[5])
-	// 	.text("/");
-	// legend.append("text")
-	// 	.attr("class", "desc")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[5])
-	// 	.text("Line colour: player with positive");
-	// legend.append("text")
-	// 	.attr("class", "desc")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[6])
-	// 	.text("corsi differential");
-	// legend.append("text")
-	// 	.attr("class", "key")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[7])
-	// 	.text("○");
-	// legend.append("text")
-	// 	.attr("class", "desc")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[7])
-	// 	.text("Circle colour: player with positive");
-	// legend.append("text")
-	// 	.attr("class", "desc")
-	// 	.attr("y", namesHeight + namesBottomPadding + y.range()[8])
-	// 	.text("goal differential");
-	// legend.selectAll("text")
-	// 	.attr("x", 0)
-	// 	.attr("xml:space", "preserve")
-	// 	.style("dominant-baseline", "middle")
-	// 	.style("fill", "#777");
-	// legend.selectAll("text.desc")
-	// 	.attr("x", 20)
 }
 
 function groupPlayers(team) {
@@ -1060,6 +1001,29 @@ function groupPlayers(team) {
 		});
 }
 
+function setTeamColours() {
+	// Home team gets priority
+	if (teams[1] === "buf" ||
+		teams[1] === "cbj" ||
+		teams[1] === "col" ||
+		teams[1] === "dal" ||
+		teams[1] === "edm" ||
+		teams[1] === "la" ||
+		teams[1] === "min" ||
+		teams[1] === "nsh" ||
+		teams[1] === "nyr" ||
+		teams[1] === "pit" ||
+		teams[1] === "sj" ||
+		teams[1] === "stl" ||
+		teams[1] === "tb" ||
+		teams[1] === "tor" ||
+		teams[1] === "van" ||
+		teams[1] === "wpg") {
+			blueTeam = teams[1];
+	} else {
+			blueTeam = teams[0];
+	}
+}
 </script>
 </body>
 </html>

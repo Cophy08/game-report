@@ -11,7 +11,7 @@ body {
 	font-size: 14px;
 	line-height: 24px;
 	padding: 0 10px;
-	width: 100%;
+	width: 480px; /* Will be overwritten by d3.js once it knows the shift chart width */
 	margin: 20px auto 80px auto;
 }
 
