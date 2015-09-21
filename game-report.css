@@ -32,11 +32,10 @@ h2 {
 }
 
 div.chart {
-	margin-bottom: 40px;
 	text-align: left;
 }
 
-#shift-chart {
-	margin-top: 32px;
-	margin-bottom: 40px;
+#shifts-div {
+	margin-top: 24px;
+	margin-bottom: 72px;
 }
