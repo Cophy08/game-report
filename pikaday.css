@@ -13,7 +13,7 @@
     color: #222;
     border: 1px solid #ddf;
     padding: 8px 30px 16px 10px;
-    font-family: Courier, 'Courier New', monospace;
+    font-family: 'Roboto Mono', Courier, 'Courier New', monospace;
 }
 
 /*
@@ -170,7 +170,7 @@ http://nicolasgallagher.com/micro-clearfix-hack/
     line-height: 24px;
     text-align: right;
     background: none;
-    font-family: Courier, 'Courier New', monospace;
+    font-family: 'Roboto Mono', Courier, 'Courier New', monospace;
 }
 
 .pika-week {
