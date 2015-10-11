@@ -178,21 +178,54 @@ d3.json(jsonUrl, function(error, json) {
 		appendShiftChart();
 		appendMatchupChart();
 
-		// Page title
+		/*
+		*
+		* Page title
+		*
+		*/
+
 		var goalCounts = [0, 0];
+		var soGoalCounts = [0, 0];
 		eventData.filter(function(d) { return d.eventType === "goal"; }).forEach(function(g) {
-			goalCounts[teams.indexOf(g.eventTeam)] += 1;
+			// Ignore shoot out goals by excluding goals with no skaters on the ice (the play-by-play report only lists goalies during shoot outs)
+			var homeSkaterCounts = g.homeSkaters.filter(function(s) { return s; }).length;
+			var awaySkaterCounts = g.awaySkaters.filter(function(s) { return s; }).length;
+			if (homeSkaterCounts > 0 && awaySkaterCounts > 0) {
+				goalCounts[teams.indexOf(g.eventTeam)] += 1;
+			} else if (homeSkaterCounts === 0 && awaySkaterCounts === 0) {
+				soGoalCounts[teams.indexOf(g.eventTeam)] += 1;
+			}
 		});
-		d3.select("h1").html("<span style='color: blue;'>" + teams[0].toUpperCase() + " " + goalCounts[0] + "</span> at <span style='color: red;'>" + teams[1].toUpperCase() + " " + goalCounts[1] + "</span> on " + titleDateString);
 
 		d3.select("h1").html(function() {
+			// Away team name
 			var outStr = "<span style='color:";
 			if (blueTeam === teams[0]) { outStr += "blue"; }
 			else { outStr += "red"; }
-			outStr += ";'>" + teams[0].replace(".", "").toUpperCase() + " " + goalCounts[0] + "</span> at <span style = 'color:";
+			outStr += ";'>" + teams[0].replace(".", "").toUpperCase() + " ";
+			// Away team goals
+			if (soGoalCounts[0] === 0 && soGoalCounts[1] === 0 || soGoalCounts[1] > soGoalCounts[0]) {
+				outStr += goalCounts[0];
+			} else if (soGoalCounts[0] > soGoalCounts[1]) {
+				outStr += (goalCounts[0] + 1);
+			}
+			// Home team name
+			outStr += "</span> at <span style = 'color:";
 			if (blueTeam === teams[1]) { outStr += "blue"; }
 			else { outStr += "red"; }
-			outStr += ";'>" + teams[1].replace(".", "").toUpperCase() + " " + goalCounts[1] + "</span> on " + titleDateString;
+			outStr += ";'>" + teams[1].replace(".", "").toUpperCase() + " ";
+			// Home team goals
+			if (soGoalCounts[0] === 0 && soGoalCounts[1] === 0 || soGoalCounts[0] > soGoalCounts[1]) {
+				outStr += goalCounts[1];
+			} else if (soGoalCounts[1] > soGoalCounts[0]) {
+				outStr += (goalCounts[1] + 1);
+			}
+			outStr += "</span>";
+			// SO indicator and date
+			if (soGoalCounts[1] > 0 || soGoalCounts[0] > 0) {
+				outStr += " (SO) ";
+			}
+			outStr += " on " + titleDateString;
 			return outStr;
 		});
 	}
@@ -548,7 +581,12 @@ function appendShiftChart() {
 				});
 
 		d3.select("g.powerplay").select(".period.period" + per.period).selectAll(".goal")
-			.data(eventData.filter(function(ev) { return ev.period === per.period && ev.eventType === "goal"; }))
+			.data(eventData.filter(function(ev) {
+				// Filter out SO goals, which will have no skaters listed in the PBP report
+				var homeSkaterCounts = ev.homeSkaters.filter(function(s) { return s; }).length;
+				var awaySkaterCounts = ev.awaySkaters.filter(function(s) { return s; }).length;
+				return ev.period === per.period && ev.eventType === "goal" && homeSkaterCounts > 0 && awaySkaterCounts > 0;
+			}))
 			.enter().append("text")
 				.attr("class", "goal")
 				.attr("x", function(d) { return xScales[d.period - 1](d.time); })
@@ -557,6 +595,7 @@ function appendShiftChart() {
 				.style("text-anchor", "middle")
 				.style("font-size", "10px")
 				.style("fill", function(d){
+					console.log(d);
 					if (d.eventTeam === blueTeam) {
 						return blue;
 					} else {
