@@ -140,15 +140,17 @@ function updateGameList() {
 		.attr("class", "team away")
 		.html(function(d) {
 			var teamStr = d.awayTeam.replace(".", "");
-			//if (teamStr.length < 3) { teamStr += "&nbsp;"; }
-			return teamStr + " <span class='score'>" + d.awayScore + "</span>";
+			// TODO: Exclude shoot out goals
+			// return teamStr + " <span class='score'>" + d.awayScore + "</span>";
+			return teamStr;
 		});
 	var homeTeam = gameLinks.append("span")
 		.attr("class", "team home")
 		.html(function(d) {
 			var teamStr = d.homeTeam.replace(".", "");
-			//if (teamStr.length < 3) { teamStr += "&nbsp;"; }
-			return teamStr + " <span class='score'>" + d.homeScore + "</span>";
+			// TODO: Exclude shoot out goals
+			// return teamStr + " <span class='score'>" + d.homeScore + "</span>";
+			return teamStr;
 		});
 }
 

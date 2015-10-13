@@ -107,7 +107,8 @@ a.game {
 	text-transform: uppercase;
 }
 	.team.away {
-		min-width: 50px;
+		/* Use 50px if displaying the score */
+		min-width: 35px;
 		margin-right: 5px;
 	}
 
